@@ -1,0 +1,85 @@
+import { createHash } from "node:crypto";
+import type {
+  Observation,
+  Vantage,
+  Layer,
+  Source,
+} from "@periscope/contracts";
+import { normalizeText } from "./text.js";
+
+export interface ObservationInput {
+  runId: string;
+  jobId: string;
+  competitor: string;
+  url: string;
+  layer: Layer;
+  source: Source;
+  kind: Observation["kind"];
+  text: string;
+  revealedBy?: Observation["revealedBy"];
+  vantage: Vantage;
+  perception: Observation["perception"];
+  screenshotPath?: string;
+  steelSessionId?: string;
+  viewerUrl?: string;
+}
+
+// The id is scoped to the run on purpose: identical text seen in a later run must be recorded again,
+// otherwise a run-to-run diff has nothing to compare (Storage rejects a repeated id as a duplicate).
+// Within one run the id still deduplicates the same line seen twice from the same vantage.
+function observationId(
+  runId: string,
+  competitor: string,
+  url: string,
+  vantage: Vantage,
+  source: Source,
+  normalizedText: string,
+): string {
+  const input = [
+    runId,
+    competitor,
+    url,
+    JSON.stringify(vantage),
+    source, // the same line seen by the fetch benchmark and by the browser are two sightings, both kept
+    normalizedText,
+  ].join("|");
+  return createHash("sha256").update(input).digest("hex");
+}
+
+/**
+ * Create an Observation with a deterministic sha256 id.
+ */
+export function createObservation(input: ObservationInput): Observation {
+  const normalized = normalizeText(input.text);
+  return {
+    id: observationId(input.runId, input.competitor, input.url, input.vantage, input.source, normalized),
+    runId: input.runId,
+    jobId: input.jobId,
+    competitor: input.competitor,
+    url: input.url,
+    layer: input.layer,
+    source: input.source,
+    kind: input.kind,
+    text: normalized,
+    revealedBy: input.revealedBy,
+    vantage: input.vantage,
+    perception: input.perception,
+    missedByFetch: undefined,
+    screenshotPath: input.screenshotPath,
+    steelSessionId: input.steelSessionId,
+    viewerUrl: input.viewerUrl,
+    capturedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Check if text was present in the surface baseline. If not, mark missedByFetch.
+ */
+export function markMissedByFetch(
+  obs: Observation,
+  surfaceText: string,
+): Observation {
+  const surfaceNormalized = normalizeText(surfaceText);
+  const missed = !surfaceNormalized.includes(obs.text);
+  return { ...obs, missedByFetch: missed };
+}

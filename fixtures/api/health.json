@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/health"
+  },
+  "status": 200,
+  "response": {
+    "ok": true,
+    "schemaVersion": 2,
+    "steel": false,
+    "model": false
+  }
+}

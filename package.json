@@ -1,0 +1,47 @@
+{
+  "name": "periscope",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest",
+    "test:live": "vitest --config vitest.live.config.ts",
+    "test:steel": "vitest run test/steel",
+    "test:steel:live": "vitest run --config vitest.live.config.ts test/steel",
+    "setup-account": "tsx src/steel/setup-account.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "setup-credential": "tsx src/steel/setup-credential.ts",
+    "api": "tsx src/api/main.ts",
+    "api:fixtures": "tsx scripts/api-fixtures.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
+    "@browserbasehq/stagehand": "^4.1.0",
+    "playwright-core": "^1.49.0",
+    "sharp": "^0.33.0",
+    "steel-sdk": "^0.18.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0",
+    "tsx": "^4.19.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "sharp",
+      "@huggingface/transformers",
+      "protobufjs",
+      "onnxruntime-node"
+    ]
+  },
+  "packageManager": "pnpm@10.34.5"
+}

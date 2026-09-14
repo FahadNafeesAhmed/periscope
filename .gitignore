@@ -1,0 +1,13 @@
+node_modules
+.pnpm-store-review/
+dist
+data/
+.env
+.env.*
+!env.template
+*.local.json
+
+
+periscope-final-architecture.md
+.venv
+__pycache__

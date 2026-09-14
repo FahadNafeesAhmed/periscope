@@ -1,0 +1,53 @@
+// Owner: Fahad. CLI: a human logs into a trial once; the profile is saved for every later walk. Test: C5.
+//
+//   npm run setup-account -- --competitor linear --url https://linear.app/login --indicator "Inbox" --account trial1 --country CA
+//
+// The human types the password in the live view. Nothing here ever sees it.
+// Steel assigns the profile id at session create (persistProfile), and the profile turns READY after release.
+
+import { SteelAdapter, defaultVantage, PROFILE_SETTLE_MS } from "./steel-adapter.js";
+import { saveProfile, waitUntilReady } from "./profiles.js";
+
+function arg(name: string, fallback?: string): string {
+  const i = process.argv.indexOf(`--${name}`);
+  const v = i >= 0 ? process.argv[i + 1] : undefined;
+  if (!v && fallback === undefined) throw new Error(`--${name} is required`);
+  return v ?? (fallback as string);
+}
+
+const competitor = arg("competitor");
+const url = arg("url");
+const indicator = arg("indicator");
+const accountRef = arg("account", "trial1");
+const country = arg("country", "CA");
+
+const adapter = new SteelAdapter({ apiKey: process.env.STEEL_API_KEY ?? "" });
+const handle = await adapter.open({ vantage: defaultVantage({ country, authenticated: true }), purpose: "setup", accountRef });
+if (!handle.profileId) { await handle.release(); throw new Error("Steel did not return a profileId; persistProfile may be unsupported on this plan"); }
+
+console.log("\nOpen this live view and log in by hand:\n  " + handle.viewerUrl + "\n");
+await handle.page.goto(url, { waitUntil: "domcontentloaded" });
+
+const deadline = Date.now() + 8 * 60 * 1000;
+let signedIn = false;
+while (Date.now() < deadline) {
+  const text = await handle.page.locator("body").innerText().catch(() => "");
+  if (text.includes(indicator)) { signedIn = true; break; }
+  await new Promise((r) => setTimeout(r, 3000));
+}
+
+if (!signedIn) {
+  console.error("Signed-in indicator not seen within 8 minutes. Releasing without saving.");
+  await handle.release();
+  process.exit(1);
+}
+
+const profileId = handle.profileId;
+console.log(`Signed in. Waiting ${PROFILE_SETTLE_MS / 1000}s so Chrome flushes cookies before the profile snapshot...`);
+await handle.page.waitForTimeout(PROFILE_SETTLE_MS);
+await handle.release(); // Steel persists the profile on release
+saveProfile({ profileId, competitor, accountRef, homeCountry: country, signedInIndicator: indicator, createdAt: new Date().toISOString(), ready: false });
+console.log(`Profile ${profileId} recorded for ${competitor}/${accountRef}. Waiting for Steel to mark it READY...`);
+await waitUntilReady(profileId, (id) => adapter.isProfileReady(id), 120_000);
+saveProfile({ profileId, competitor, accountRef, homeCountry: country, signedInIndicator: indicator, createdAt: new Date().toISOString(), ready: true });
+console.log("Profile READY. Every walker for this competitor now starts signed in.");
