@@ -3,7 +3,7 @@
 // button; one story per run; and the intelligence beneath. Other countries open only when the page gives a reason.
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, observedTexts, regionSignals, TARGET_URL, usePoll,
+  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, siteMap, TARGET_URL, usePoll,
   type BordersGrid, type BordersPlan, type CoveragePage, type Handoff, type LiveSession, type MatrixRow, type PriceRow, type RunSummary, type RunView, type StoredEvent,
 } from "@/lib/api";
 import { newTraceState, storyFor, storyOrder, updateTrace, type Story, type TraceState } from "@/lib/story";
@@ -87,30 +87,53 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
     return () => clearInterval(id);
   }, []);
 
-  async function runHelix() {
+  /** Is this the demo site? Only there does the saved test account exist, so only there does the sign-in run. */
+  const isDemoSite = (u: string) => { try { return new URL(u).hostname === new URL(TARGET_URL).hostname; } catch { return false; } };
+
+  // Whole-site runs: report the map as soon as discovery finishes.
+  useEffect(() => {
+    if (!mapRun) return;
+    let stop = false;
+    const id = setInterval(async () => {
+      const m = await siteMap(mapRun);
+      if (stop || !m) return;
+      if (m.ready) {
+        stop = true; clearInterval(id); setMapRun(null);
+        const pricing = m.pages.find((u) => /pric|plans?\b/i.test(u));
+        if (pricing && pending.current) pending.current.plan.pages = [new URL(pricing).pathname];
+        setNote(`Site map: ${m.nodes} pages found${m.sitemap ? " (sitemap)" : ""}, ${m.documents.length} documents. Opening the top ${m.pages.length} in parallel browsers.`);
+      } else if (!("ready" in m)) { stop = true; clearInterval(id); setMapRun(null); }
+    }, 2500);
+    return () => { stop = true; clearInterval(id); };
+  }, [mapRun]);
+
+  /** One button. The demo site gets the full demo (read, sign in, countries when the page asks); any other site gets its page, or the whole site. */
+  async function run() {
     if (busy) return;
-    setBusy(true); setNote("Starting…");
-    const { parse, login, borders } = await launchHelixDemo(target.replace(/\/$/, ""));
-    const launched = [parse.runId, login.runId].filter((x): x is string => Boolean(x));
-    const errors = [parse.error, login.error].filter((x): x is string => Boolean(x));
-    if (launched.length) {
-      setFollowed(launched);
-      setNote(compare ? "Reading the page, signing in, and opening other countries." : "Reading the page and signing in. Other countries open if the page gives a reason.");
+    const url = target.trim().replace(/\/$/, "");
+    if (!/^https?:\/\//i.test(url)) { setNote("Enter a full address starting with https://"); return; }
+    setBusy(true);
+    if (isDemoSite(url)) {
+      setNote("Starting…");
+      const { parse, login, borders } = await launchHelixDemo(url);
+      const launched = [parse.runId, login.runId].filter((x): x is string => Boolean(x));
+      const errors = [parse.error, login.error].filter((x): x is string => Boolean(x));
+      if (launched.length) {
+        setFollowed(launched);
+        setNote(compare ? "Reading the page, signing in, and opening other countries." : "Reading the page and signing in. Other countries open if the page gives a reason.");
+      }
+      if (parse.runId) pending.current = { plan: borders, parseRunId: parse.runId, force: compare, polls: 0, busy: false };
+      if (errors.length) setNote((n) => `${n}${n ? " · " : ""}${errors.join(" · ")}`);
+    } else {
+      setNote(wholeSite ? "Mapping the site…" : "Starting…");
+      const r = wholeSite ? await launchSiteRun(url) : await launchCustomRun(url);
+      if (r.runId) {
+        setFollowed([r.runId]);
+        if (wholeSite) setMapRun(r.runId);
+        setNote(wholeSite ? "Mapping the site: reading its sitemap and links before any browser opens." : compare ? "Reading the page and opening other countries." : "Reading the page. Other countries open if the page gives a reason.");
+        if (r.borders) pending.current = { plan: r.borders, parseRunId: r.runId, force: compare, polls: 0, busy: false };
+      } else setNote(r.error ?? "Could not start.");
     }
-    if (parse.runId) pending.current = { plan: borders, parseRunId: parse.runId, force: compare, polls: 0, busy: false };
-    if (errors.length) setNote((n) => `${n}${n ? " · " : ""}${errors.join(" · ")}`);
-    setBusy(false);
-  }
-  async function runCustom(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!/^https?:\/\//i.test(custom.trim())) { setNote("Enter a full address starting with https://"); return; }
-    setBusy(true); setNote("Starting…");
-    const r = await launchCustomRun(custom.trim());
-    if (r.runId) {
-      setFollowed([r.runId]);
-      setNote(compare ? "Reading the page and opening other countries." : "Reading the page. Other countries open if the page gives a reason.");
-      if (r.borders) pending.current = { plan: r.borders, parseRunId: r.runId, force: compare, polls: 0, busy: false };
-    } else setNote(r.error ?? "Could not start.");
     setBusy(false);
   }
   async function resume(h: Handoff) {
@@ -118,7 +141,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
     setNote(body?.ok ? `Resumed job ${h.jobId.slice(0, 8)}.` : body?.reason ?? "Resume refused.");
   }
 
-  const disabled = !/^https?:\/\//i.test(target) || /localhost|127\.0\.0\.1/.test(target) || !health?.steel;
+  const disabled = !/^https?:\/\//i.test(target.trim()) || /localhost|127\.0\.0\.1/.test(target) || !health?.steel;
   const live = sessions ?? [];
   const shown = showAll ? live : live.slice(0, PREVIEW_FRAMES);
   const hidden = live.length - shown.length;
@@ -138,7 +161,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         <div className="launcher-row">
           <div>
             <input id="helix-target" type="url" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target URL" />
-            <button type="button" className="primary-action" disabled={disabled || busy} onClick={runHelix}>Run</button>
+            <button type="button" className="primary-action" disabled={disabled || busy} onClick={run}>Run</button>
           </div>
           <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Open the whole site: map every page first, then open the best 50 in every browser the plan allows</label>
           <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Always compare from other countries ({DEMO_COUNTRIES.join(", ")})</label>
