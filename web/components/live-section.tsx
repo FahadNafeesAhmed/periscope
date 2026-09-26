@@ -59,16 +59,22 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
       try {
         p.polls += 1;
         let reason = "";
-        if (p.force) reason = "requested";
+        const site = p.parseRunId.startsWith("site-");
+        if (p.force && !site) reason = "requested";
         else {
           const [run, texts] = await Promise.all([apiGet<RunView>(`/runs/${p.parseRunId}`), observedTexts(p.parseRunId)]);
+          // whole-site runs use every browser; countries wait until those browsers are free
+          if (site && run && run.run.status === "running") return;
+          if (p.force) reason = "requested";
+          else {
           const signals = regionSignals(texts);
           if (signals.length) reason = signals.join(", ");
-          else if ((run && run.run.status !== "running") || p.polls > 80) {
+          else if ((run && run.run.status !== "running") || p.polls > 200) {
             pending.current = null;
-            setNote("Nothing on the page suggests prices change by country, so no country proxies were opened.");
+            setNote("Nothing on the site suggests prices change by country, so no country proxies were opened.");
             return;
           } else return;
+          }
         }
         pending.current = null;
         const r = await launchBorders(p.plan);

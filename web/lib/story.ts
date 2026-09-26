@@ -99,9 +99,13 @@ export function storyFor(run: RunView, events: StoredEvent[]): Story {
       lines.push({ tone: "plain", html: `${VERBS[v.action] ?? "used"} <b>${esc(label.slice(0, 40))}</b> → ${v.n} line${v.n === 1 ? "" : "s"} a fetch tool never saw` });
     }
     const total = [...counters.values()].reduce((a, b) => a + b, 0);
+    const pagesOpened = new Set(obs.filter((o) => o.layer === "hidden" || o.layer === "surface").map((o) => o.url).filter(Boolean)).size;
+    const limitHit = reasons.filter((r) => /concurrent session limit|429/i.test(r)).length;
     if (total) lines.push({ tone: "ok", html: `${total} lines missed by fetch across ${counters.size} page${counters.size === 1 ? "" : "s"}${seconds !== null ? ` · ${seconds} s` : ""}` });
     else if (status === "running") lines.push({ tone: "muted", html: revealJobs > 1 ? "mapping the site, then opening the best pages in parallel and clicking everything a fetch tool cannot" : "reading the page, then clicking everything a fetch tool cannot" });
+    else if (pagesOpened) lines.push({ tone: "plain", html: `opened <b>${pagesOpened}</b> page${pagesOpened === 1 ? "" : "s"}; nothing more was hiding behind clicks on this site${seconds !== null ? ` · ${seconds} s` : ""}` });
     else lines.push({ tone: "muted", html: "this run did not finish its reveal; press the button again with nothing else running" });
+    if (limitHit) lines.push({ tone: "warn", html: `the plan's browser limit was hit: ${limitHit} browser${limitHit === 1 ? "" : "s"} could not open, so some pages were skipped. Run again with nothing else running.` });
   } else if (kind === "COUNTRIES") {
     const byCountry = new Map<string, string[]>();
     for (const o of borders) {
@@ -112,7 +116,11 @@ export function storyFor(run: RunView, events: StoredEvent[]): Story {
       byCountry.set(c, list);
     }
     for (const [c, prices] of byCountry) lines.push({ tone: "plain", html: `from <b>${esc(countryName(c) ?? c)}</b> through a proxy: ${prices.map((p) => esc(p.slice(0, 26))).join(" · ")}` });
-    if (byCountry.size > 1) lines.push({ tone: "ok", html: `prices differ by country, seen in ${borders.length} lines from 6 browsers at once${seconds !== null ? ` · ${seconds} s` : ""}` });
+    const sets = [...byCountry.values()].map((p) => [...p].sort().join("|"));
+    const differ = new Set(sets).size > 1;
+    if (byCountry.size > 1 && differ) lines.push({ tone: "ok", html: `prices differ by country, seen in ${borders.length} lines from 6 browsers at once${seconds !== null ? ` · ${seconds} s` : ""}` });
+    else if (byCountry.size > 1) lines.push({ tone: "plain", html: `same prices in all ${byCountry.size} countries, checked in ${borders.length} lines from 6 browsers at once${seconds !== null ? ` · ${seconds} s` : ""}` });
+    else if (status !== "running" && !byCountry.size) lines.push({ tone: "muted", html: `no price lines on this page from ${countries.length || 3} countries; nothing to compare` });
     else if (status === "running") lines.push({ tone: "muted", html: "opening six browsers in three countries" });
   } else {
     if (logins.length) lines.push({ tone: "ok", html: "Stored credentials were injected from the vault, the anti-bot box was verified in the browser, <b>signed in without a human</b>. The model never saw the password." });
