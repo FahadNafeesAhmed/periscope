@@ -3,7 +3,7 @@
 // button; one story per run; and the intelligence beneath. Other countries open only when the page gives a reason.
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, siteMap, TARGET_URL, usePoll,
+  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, observedTexts, regionSignals, TARGET_URL, usePoll,
   type BordersGrid, type BordersPlan, type CoveragePage, type Handoff, type LiveSession, type MatrixRow, type PriceRow, type RunSummary, type RunView, type StoredEvent,
 } from "@/lib/api";
 import { newTraceState, storyFor, storyOrder, updateTrace, type Story, type TraceState } from "@/lib/story";
@@ -24,7 +24,6 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
   const runs = usePoll(() => apiGet<{ runs: RunSummary[] }>("/runs?limit=30").then((r) => r?.runs ?? null), 4000);
 
   const [target, setTarget] = useState(TARGET_URL);
-  const [custom, setCustom] = useState("");
   const [compare, setCompare] = useState(false);
   const [wholeSite, setWholeSite] = useState(false);
   const [mapRun, setMapRun] = useState<string | null>(null);
@@ -96,32 +95,14 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
     if (errors.length) setNote((n) => `${n}${n ? " · " : ""}${errors.join(" · ")}`);
     setBusy(false);
   }
-  // Whole-site runs: report the map as soon as discovery finishes.
-  useEffect(() => {
-    if (!mapRun) return;
-    let stop = false;
-    const id = setInterval(async () => {
-      const m = await siteMap(mapRun);
-      if (stop || !m) return;
-      if (m.ready) {
-        stop = true; clearInterval(id); setMapRun(null);
-        const pricing = m.pages.find((u) => /pric|plans?\b/i.test(u));
-        if (pricing && pending.current) pending.current.plan.pages = [new URL(pricing).pathname];
-        setNote(`Site map: ${m.nodes} pages found${m.sitemap ? " (sitemap)" : ""}, ${m.documents.length} documents. Opening the top ${m.pages.length} in parallel browsers.`);
-      } else if (!("ready" in m)) { stop = true; clearInterval(id); setMapRun(null); }
-    }, 2500);
-    return () => { stop = true; clearInterval(id); };
-  }, [mapRun]);
-
   async function runCustom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!/^https?:\/\//i.test(custom.trim())) { setNote("Enter a full address starting with https://"); return; }
-    setBusy(true); setNote(wholeSite ? "Mapping the site…" : "Starting…");
-    const r = wholeSite ? await launchSiteRun(custom.trim()) : await launchCustomRun(custom.trim());
+    setBusy(true); setNote("Starting…");
+    const r = await launchCustomRun(custom.trim());
     if (r.runId) {
       setFollowed([r.runId]);
-      if (wholeSite) setMapRun(r.runId);
-      setNote(wholeSite ? "Mapping the site: reading its sitemap and links before any browser opens." : compare ? "Reading the page and opening other countries." : "Reading the page. Other countries open if the page gives a reason.");
+      setNote(compare ? "Reading the page and opening other countries." : "Reading the page. Other countries open if the page gives a reason.");
       if (r.borders) pending.current = { plan: r.borders, parseRunId: r.runId, force: compare, polls: 0, busy: false };
     } else setNote(r.error ?? "Could not start.");
     setBusy(false);
@@ -147,25 +128,16 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         <p>One browser reads the page and clicks what a scraper can&apos;t. One signs in. If the page hints that prices change by country, more open, each from a different country.</p>
       </div>
 
-      <div className="launcher">
+      <div className="launcher launcher-flush">
         <div className="launcher-row">
-          <label htmlFor="helix-target">Demo target</label>
           <div>
-            <input id="helix-target" type="url" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://testsaasstartup.vercel.app" />
-            <button type="button" className="primary-action" disabled={disabled || busy} onClick={runHelix}>Run the demo</button>
-          </div>
-          <p>Reads the pricing page, then signs in with a saved account. If a wall appears, a person clears it in the live frame and the run continues.</p>
-        </div>
-        <form className="launcher-row" onSubmit={runCustom}>
-          <label htmlFor="custom-target">Any pricing page</label>
-          <div>
-            <input id="custom-target" type="url" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="https://competitor.example/pricing" />
-            <button type="submit" className="secondary-action" disabled={busy || !health?.steel}>Open</button>
+            <input id="helix-target" type="url" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target URL" />
+            <button type="button" className="primary-action" disabled={disabled || busy} onClick={runHelix}>Run</button>
           </div>
           <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Open the whole site: map every page first, then open the best 50 in every browser the plan allows</label>
           <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Always compare from other countries ({DEMO_COUNTRIES.join(", ")})</label>
           <p aria-live="polite">{status}</p>
-        </form>
+        </div>
       </div>
 
       <div className="chips mono" aria-label="Browsers so far">

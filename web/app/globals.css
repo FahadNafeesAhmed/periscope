@@ -2457,3 +2457,19 @@ td a {
   padding: 0;
   border: 0;
 }
+.launcher-flush {
+  grid-template-columns: 1fr;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.launcher-flush .launcher-row {
+  padding: 0;
+  background: transparent;
+}
+.launcher-flush .launcher-row input {
+  border-radius: 9999px;
+}
+.launcher-flush .primary-action {
+  border-radius: 9999px;
+}
