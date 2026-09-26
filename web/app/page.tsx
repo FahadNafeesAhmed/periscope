@@ -1,2 +1,4 @@
-import { HackathonShowcase } from "@/components/hackathon-showcase";
-export default function Home() { return <HackathonShowcase/>; }
+import { Landing } from "@/components/landing";
+export default function Home() {
+  return <Landing />;
+}
