@@ -21,3 +21,4 @@
 .launcher-row label{text-transform:none}.launcher-row .check-row{display:flex;align-items:center;gap:8px;margin:10px 0 0;font:10px var(--font-code);color:var(--muted);cursor:pointer;letter-spacing:.3px}.launcher-row .check-row input{accent-color:var(--accent);margin:0;width:12px;height:12px}
 .trace-panel{border-top:1px solid var(--rule);margin-top:12px;padding-top:6px}.trace-panel summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:9px;letter-spacing:1px;padding:8px 0}.trace-panel summary::-webkit-details-marker{display:none}.trace-panel summary:after{content:'+';font-size:14px;color:var(--accent);line-height:1}.trace-panel[open] summary:after{content:'–'}.trace-panel .trace-log{margin:6px 0 10px}
 .show-all{margin-top:14px;width:100%}.empty-state{letter-spacing:.3px;text-transform:none}
+.launcher-row .check-row input{flex:0 0 auto;padding:0;border:0}
