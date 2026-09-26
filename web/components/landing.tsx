@@ -141,7 +141,6 @@ export function Landing() {
         </a>
         <nav aria-label="Main navigation">
           <a href="#live">Live</a>
-          <a href="#corpus">Corpus</a>
           <a href="#results">Benchmark</a>
           <a href="https://github.com/FahadNafeesAhmed/periscope">GitHub ↗</a>
           <button
@@ -410,116 +409,6 @@ export function Landing() {
             </div>
           </section>
         )}
-        <section
-          id="corpus"
-          className="console-section corpus-section"
-          aria-labelledby="corpus-title"
-        >
-          <div className="console-section-title">
-            <div>
-              <div className="eyebrow">The knowledge corpus</div>
-              <h2 id="corpus-title">Every fact has a way back.</h2>
-            </div>
-            <p>
-              Pages → actions → observations → context.
-              <br />
-              Select a node to inspect the connection.
-            </p>
-          </div>
-          <div className="corpus-layout">
-            <div className="graph-region">
-              <div className="graph-legend mono">
-                <span>○ page</span>
-                <span>◇ action</span>
-                <span>● fact</span>
-                <span>context</span>
-              </div>
-              <svg
-                className="knowledge-graph"
-                viewBox="0 0 760 460"
-                role="group"
-                aria-label="Interactive evidence graph"
-              >
-                {links.map(([a, b]) => {
-                  const s = nodes.find((n) => n.id === a)!;
-                  const e = nodes.find((n) => n.id === b)!;
-                  return (
-                    <line
-                      key={a + b}
-                      x1={s.x}
-                      y1={s.y}
-                      x2={e.x}
-                      y2={e.y}
-                      className={
-                        a === nodeId || b === nodeId ? "edge selected" : "edge"
-                      }
-                    />
-                  );
-                })}
-                {nodes.map((n) => (
-                  <g
-                    key={n.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Inspect ${n.label}`}
-                    aria-pressed={nodeId === n.id}
-                    onClick={() => setNodeId(n.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setNodeId(n.id);
-                      }
-                    }}
-                    className={`graph-node ${nodeId === n.id ? "selected" : ""}`}
-                  >
-                    <circle cx={n.x} cy={n.y} r="21" fill="transparent" />
-                    <circle
-                      cx={n.x}
-                      cy={n.y}
-                      r={n.id === "target" ? 10 : 6}
-                      className={n.kind.toLowerCase()}
-                    />
-                    <text x={n.x} y={n.y + 27} textAnchor="middle">
-                      {n.label}
-                    </text>
-                  </g>
-                ))}
-              </svg>
-            </div>
-            <aside className="node-inspector" aria-live="polite">
-              <div className="panel-caption mono">
-                Selected · {node.kind.toLowerCase()}
-              </div>
-              <h3>{node.label}</h3>
-              <p>{node.description}</p>
-              <div className="panel-caption mono">Connected to</div>
-              <ul>
-                {links
-                  .filter((l) => l.includes(nodeId))
-                  .map((l) => {
-                    const n = nodes.find(
-                      (n) => n.id === l.find((id) => id !== nodeId),
-                    )!;
-                    return (
-                      <li key={n.id}>
-                        <button type="button" onClick={() => setNodeId(n.id)}>
-                          {n.label}
-                          <span>↗</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-              </ul>
-              <div className="storage-note">
-                <span className="mono">How it is stored</span>
-                <p>
-                  Every fact keeps the page, the click, and the country that
-                  produced it. Nothing is stored without its way back.
-                </p>
-              </div>
-            </aside>
-          </div>
-        </section>
         <section
           id="results"
           className="console-section results-section"
