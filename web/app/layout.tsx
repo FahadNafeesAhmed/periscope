@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Periscope — Below the surface",
-  description: "Competitive intelligence beyond the initial page. Explore browser interactions, authorized sessions, and the evidence behind every recovered fact.",
-  openGraph: { title: "Periscope — Below the surface", description: "Every research tool reads what websites serve. Periscope reads what they hide.", type: "website" },
+  description: "Know what your competitors hide. Real prices, every country, past the login. Watched live, backed by evidence.",
+  openGraph: { title: "Periscope — Below the surface", description: "Know what your competitors hide. Real prices, every country, past the login.", type: "website" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

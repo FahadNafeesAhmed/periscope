@@ -1,5 +1,5 @@
-// Plain-language derivations for the console: the Steel usage trace (which browsers opened, where, with what) and
-// one story per run (what the agent did, with every Steel feature named). Ported from the Streamlit live section.
+// Plain-language derivations for the console: the browser trace (which browsers opened, where, with what) and
+// one story per run (what the agent did). Ported from the Streamlit live section.
 import { countryName, type Handoff, type LiveSession, type RunView, type StoredEvent } from "./api";
 
 export type TraceLine = { at: string; kind: "steel" | "release" | "wall"; text: string };
@@ -21,19 +21,19 @@ export function updateTrace(state: TraceState, sessions: LiveSession[], handoffs
     state.stats.devices.add(s.vantage.device);
     if (s.vantage.country) state.stats.countries.add(s.vantage.country);
     const parts = [
-      `Steel opened browser #${state.stats.browsers} for ${s.competitor ?? "a target"}`,
+      `Opened browser #${state.stats.browsers} for ${s.competitor ?? "a target"}`,
       `purpose ${s.purpose ?? "session"}`,
-      s.vantage.country ? `${countryName(s.vantage.country)} through a Steel proxy` : "Steel's home region",
+      s.vantage.country ? `${countryName(s.vantage.country)} through a proxy` : "home region",
       s.vantage.device === "mobile" ? "mobile device emulation" : "desktop",
     ];
-    if (s.accountRef) { parts.push("saved login: Steel profile restored and credentials injected, never seen by the model"); state.stats.logins += 1; }
-    else if (s.purpose === "walker") parts.push("Steel keeps this session's profile so the login survives for later walks");
+    if (s.accountRef) { parts.push("saved login: profile restored, credentials injected, never seen by the model"); state.stats.logins += 1; }
+    else if (s.purpose === "walker") parts.push("this session's profile is kept so the login survives for later walks");
     state.trace.push({ at: now(), kind: "steel", text: `${parts.join(" · ")} · session ${s.sessionId.slice(0, 8)}` });
   }
   for (const [id, info] of state.seen) {
     if (!live.has(id) && !info.closed && !id.includes(":")) {
       info.closed = true;
-      state.trace.push({ at: now(), kind: "release", text: `Steel released browser ${id.slice(0, 8)} after ${Math.round((Date.now() - info.t) / 1000)} s (${info.purpose ?? "session"})` });
+      state.trace.push({ at: now(), kind: "release", text: `Released browser ${id.slice(0, 8)} after ${Math.round((Date.now() - info.t) / 1000)} s (${info.purpose ?? "session"})` });
     }
   }
   for (const h of handoffs) {
@@ -41,7 +41,7 @@ export function updateTrace(state: TraceState, sessions: LiveSession[], handoffs
     if (!state.seen.has(key)) {
       state.seen.set(key, { t: Date.now(), closed: true });
       state.stats.walls += 1;
-      state.trace.push({ at: now(), kind: "wall", text: `${h.wall.toUpperCase()} wall: the session is kept alive, a human takes over in Steel's live view, the walk resumes in the same browser` });
+      state.trace.push({ at: now(), kind: "wall", text: `${h.wall.toUpperCase()} wall: the session is kept alive, a human takes over in the live view, the walk resumes in the same browser` });
     }
   }
   return state;
@@ -75,8 +75,8 @@ export function storyFor(run: RunView, events: StoredEvent[]): Story {
   let seconds: number | null = null;
   try { seconds = Math.round((new Date(run.run.updatedAt).getTime() - new Date(run.run.createdAt).getTime()) / 1000); } catch { /* none */ }
 
-  const badges = [kind === "COUNTRIES" ? "6 Steel browsers" : "1 Steel browser"];
-  if (countries.length) badges.push(`Steel proxies: ${countries.join(" ")}`);
+  const badges = [kind === "COUNTRIES" ? "6 browsers" : "1 browser"];
+  if (countries.length) badges.push(`countries: ${countries.join(" ")}`);
   if (devices.has("mobile")) badges.push("device emulation");
   if (kind === "LOG IN") badges.push("profile kept");
   if (captcha.length) badges.push("CAPTCHA solver");
@@ -108,18 +108,18 @@ export function storyFor(run: RunView, events: StoredEvent[]): Story {
       if (!list.includes(t) && list.length < 3) list.push(t);
       byCountry.set(c, list);
     }
-    for (const [c, prices] of byCountry) lines.push({ tone: "plain", html: `from <b>${esc(countryName(c) ?? c)}</b> through a Steel proxy: ${prices.map((p) => esc(p.slice(0, 26))).join(" · ")}` });
+    for (const [c, prices] of byCountry) lines.push({ tone: "plain", html: `from <b>${esc(countryName(c) ?? c)}</b> through a proxy: ${prices.map((p) => esc(p.slice(0, 26))).join(" · ")}` });
     if (byCountry.size > 1) lines.push({ tone: "ok", html: `prices differ by country, seen in ${borders.length} lines from 6 browsers at once${seconds !== null ? ` · ${seconds} s` : ""}` });
     else if (status === "running") lines.push({ tone: "muted", html: "opening six browsers in three countries" });
   } else {
-    if (logins.length) lines.push({ tone: "ok", html: "Steel injected the stored credentials from its vault, the anti-bot box was verified in the browser, <b>signed in without a human</b>. The model never saw the password." });
+    if (logins.length) lines.push({ tone: "ok", html: "Stored credentials were injected from the vault, the anti-bot box was verified in the browser, <b>signed in without a human</b>. The model never saw the password." });
     else if (attempts.length) lines.push({ tone: "warn", html: `${esc(attempts[attempts.length - 1].replace("login attempt: ", "").replace("; handing off to a human", ""))}, so a human takes over in the live view` });
     if (handoffs.length) {
       const last = handoffs[handoffs.length - 1];
-      const msg: Record<string, string> = { awaiting_human: "waiting for a human in Steel's live view", resumed: "a human cleared it, the walk resumed in the same browser", abandoned: "nobody cleared it in time" };
+      const msg: Record<string, string> = { awaiting_human: "waiting for a human in the live view", resumed: "a human cleared it, the walk resumed in the same browser", abandoned: "nobody cleared it in time" };
       lines.push({ tone: "warn", html: `${esc(last.wall)} wall → ${msg[last.state] ?? esc(last.state)}` });
     }
-    if (captcha.length) lines.push({ tone: "plain", html: `Steel CAPTCHA solver ran first: <b>${esc(captcha[captcha.length - 1])}</b>` });
+    if (captcha.length) lines.push({ tone: "plain", html: `CAPTCHA solver ran first: <b>${esc(captcha[captcha.length - 1])}</b>` });
     if (interior.length) {
       const pages = [...new Set(interior.map((o) => (o.url ?? "").replace(/\/$/, "").split("/").pop() || "dashboard"))].sort();
       lines.push({ tone: "ok", html: `inside: ${interior.length} facts from ${pages.length} screens (${esc(pages.slice(0, 6).join(", "))})` });

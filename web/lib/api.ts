@@ -66,28 +66,65 @@ export function usePoll<T>(load: () => Promise<T | null>, intervalMs: number, de
 export const COUNTRY_NAMES: Record<string, string> = { CA: "Canada", US: "United States", DE: "Germany", GB: "United Kingdom", FR: "France", JP: "Japan", AU: "Australia", IN: "India", BR: "Brazil" };
 export const countryName = (c?: string | null) => (c ? COUNTRY_NAMES[c] ?? c : null);
 
-/** The Helix Ledger demo: parse the pricing page, see it from three countries, sign in with the vaulted account. */
-export async function launchHelixDemo(target: string): Promise<{ launched: string[]; errors: string[] }> {
-  const stamp = new Date().toISOString().slice(11, 19).replace(/:/g, "");
-  const bodies = [
-    { competitor: "helix-ledger", url: target, pages: ["/pricing", "/regulatory", "/security"], jobs: ["surface", "benchmark", "reveal"], runId: `helix-parse-${stamp}` },
-    { competitor: "helix-ledger", url: target, pages: ["/pricing"], jobs: ["surface", "borders"], countries: ["CA", "US", "DE"], runId: `helix-borders-${stamp}` },
-    // accountRef trial1: Steel injects the credential stored in its vault; no proxy, the tunnel challenges proxied traffic
-    { competitor: "helix-ledger", url: target, jobs: ["walker"], start: `${target}/sign-in`, countries: [], accountRef: "trial1", runId: `helix-login-${stamp}` },
-  ];
-  const launched: string[] = []; const errors: string[] = [];
-  for (const body of bodies) {
-    const { status, body: res } = await apiPost<{ ok: boolean; runId?: string; reason?: string }>("/runs", body, { "Idempotency-Key": `web-${body.runId}` });
-    if (res?.ok && res.runId) launched.push(res.runId); else errors.push(`${body.runId}: ${res?.reason ?? `HTTP ${status}`}`);
-  }
-  return { launched, errors };
+export const DEMO_COUNTRIES = ["CA", "US", "DE"];
+export type Launch = { runId?: string; error?: string };
+/** Everything needed to open the same page from other countries later, once the page shows it is worth it. */
+export type BordersPlan = { competitor: string; url: string; pages: string[]; runId: string; category?: string };
+
+const stampNow = () => new Date().toISOString().slice(11, 19).replace(/:/g, "");
+
+async function launch(body: Record<string, unknown>, key: string): Promise<Launch> {
+  const { status, body: res } = await apiPost<{ ok: boolean; runId?: string; reason?: string }>("/runs", body, { "Idempotency-Key": key });
+  if (res?.ok && res.runId) return { runId: res.runId };
+  return { error: res?.reason ?? (status === 0 ? "Periscope is offline right now." : `HTTP ${status}`) };
 }
 
-/** A single custom run against any url: surface, benchmark, reveal and borders. */
-export async function launchCustomRun(url: string): Promise<{ runId?: string; error?: string }> {
+/** The Helix Ledger demo: parse the pricing page and sign in. Other countries open separately, only when the page calls for it. */
+export async function launchHelixDemo(target: string): Promise<{ parse: Launch; login: Launch; borders: BordersPlan }> {
+  const stamp = stampNow();
+  const parse = await launch({ competitor: "helix-ledger", url: target, pages: ["/pricing", "/regulatory", "/security"], jobs: ["surface", "benchmark", "reveal"], runId: `helix-parse-${stamp}` }, `web-helix-parse-${stamp}`);
+  // accountRef trial1: the credential stored in the vault is injected; no proxy, the tunnel challenges proxied traffic
+  const login = await launch({ competitor: "helix-ledger", url: target, jobs: ["walker"], start: `${target}/sign-in`, countries: [], accountRef: "trial1", runId: `helix-login-${stamp}` }, `web-helix-login-${stamp}`);
+  return { parse, login, borders: { competitor: "helix-ledger", url: target, pages: ["/pricing"], runId: `helix-borders-${stamp}` } };
+}
+
+/** A single custom run against any url: surface, benchmark and reveal. Countries are a separate, deliberate step. */
+export async function launchCustomRun(url: string): Promise<Launch & { borders?: BordersPlan }> {
   const u = new URL(url);
-  const { status, body } = await apiPost<{ ok: boolean; runId?: string; reason?: string }>("/runs", {
-    competitor: u.hostname.replace(/^www\./, ""), url: u.origin, pages: [u.pathname || "/"], jobs: ["surface", "benchmark", "reveal", "borders"], countries: ["CA", "US", "DE"], category: "demo",
-  }, { "Idempotency-Key": `web-${Date.now()}` });
-  return body?.ok && body.runId ? { runId: body.runId } : { error: body?.reason ?? (status === 0 ? "API unavailable. Start npm run api on port 4747." : `HTTP ${status}`) };
+  const competitor = u.hostname.replace(/^www\./, "");
+  const pages = [u.pathname || "/"];
+  const stamp = stampNow();
+  const r = await launch({ competitor, url: u.origin, pages, jobs: ["surface", "benchmark", "reveal"], category: "demo", runId: `custom-parse-${stamp}` }, `web-custom-parse-${stamp}`);
+  return r.runId ? { ...r, borders: { competitor, url: u.origin, pages, runId: `custom-borders-${stamp}`, category: "demo" } } : r;
+}
+
+/** Open the page from other countries through proxies. */
+export function launchBorders(plan: BordersPlan, countries: string[] = DEMO_COUNTRIES): Promise<Launch> {
+  const body: Record<string, unknown> = { competitor: plan.competitor, url: plan.url, pages: plan.pages, jobs: ["surface", "borders"], countries, runId: plan.runId };
+  if (plan.category) body.category = plan.category;
+  return launch(body, `web-${plan.runId}`);
+}
+
+/** Text of what a run has observed so far, for deciding whether other countries are worth a look. */
+export async function observedTexts(runId: string): Promise<string[]> {
+  const r = await apiGet<{ observations: Array<{ text?: string }> }>(`/runs/${runId}/observations?limit=400`);
+  return (r?.observations ?? []).map((o) => o.text ?? "").filter(Boolean);
+}
+
+/** Signs on a page that the price may change with the visitor's country. Empty means: no reason to open proxies. */
+const SIGNALS: Array<[RegExp, string]> = [
+  [/\b(?:VAT|GST|HST|sales tax)\b|\b(?:incl|excl)(?:uding|\.)?\s+(?:of\s+)?tax/i, "tax note"],
+  [/\b(?:for|in) your (?:region|country|location|local currency)\b|\blocal(?:ised|ized)? pricing\b|\bregional pricing\b/i, "region note"],
+  [/\b(?:select|choose|change) (?:your )?(?:country|region|currency)\b|\bcountry\/region\b/i, "region selector"],
+  [/\b(?:USD|EUR|GBP|CAD|AUD|INR|JPY|BRL)\b/, "currency code"],
+];
+export function regionSignals(texts: string[]): string[] {
+  const found = new Set<string>();
+  const symbols = new Set<string>();
+  for (const t of texts) {
+    for (const [re, label] of SIGNALS) if (re.test(t)) found.add(label);
+    for (const m of t.matchAll(/(CA\$|US\$|A\$|R\$|\$|€|£|₹|¥)\s?\d/g)) symbols.add(m[1]);
+  }
+  if (symbols.size > 1) found.add(`${symbols.size} currencies (${[...symbols].join(" ")})`);
+  return [...found];
 }

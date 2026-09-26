@@ -5,3 +5,4 @@ out/
 *.tsbuildinfo
 SOURCE.md
 *.png
+!public/live-view.png
