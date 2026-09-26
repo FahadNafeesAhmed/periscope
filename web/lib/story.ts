@@ -75,7 +75,10 @@ export function storyFor(run: RunView, events: StoredEvent[]): Story {
   let seconds: number | null = null;
   try { seconds = Math.round((new Date(run.run.updatedAt).getTime() - new Date(run.run.createdAt).getTime()) / 1000); } catch { /* none */ }
 
-  const badges = [kind === "COUNTRIES" ? "6 browsers" : "1 browser"];
+  const revealJobs = run.jobs.filter((j) => j.purpose === "reveal").length;
+  const browsers = kind === "COUNTRIES" ? 6 : Math.max(1, revealJobs);
+  const badges = [`${browsers} browser${browsers === 1 ? "" : "s"}`];
+  if (kind === "PARSE" && revealJobs > 1) badges.push(`${new Set(obs.map((o) => o.url).filter(Boolean)).size} pages`);
   if (countries.length) badges.push(`countries: ${countries.join(" ")}`);
   if (devices.has("mobile")) badges.push("device emulation");
   if (kind === "LOG IN") badges.push("profile kept");
@@ -97,7 +100,7 @@ export function storyFor(run: RunView, events: StoredEvent[]): Story {
     }
     const total = [...counters.values()].reduce((a, b) => a + b, 0);
     if (total) lines.push({ tone: "ok", html: `${total} lines missed by fetch across ${counters.size} page${counters.size === 1 ? "" : "s"}${seconds !== null ? ` · ${seconds} s` : ""}` });
-    else if (status === "running") lines.push({ tone: "muted", html: "reading the page, then clicking everything a fetch tool cannot" });
+    else if (status === "running") lines.push({ tone: "muted", html: revealJobs > 1 ? "mapping the site, then opening the best pages in parallel and clicking everything a fetch tool cannot" : "reading the page, then clicking everything a fetch tool cannot" });
     else lines.push({ tone: "muted", html: "this run did not finish its reveal; press the button again with nothing else running" });
   } else if (kind === "COUNTRIES") {
     const byCountry = new Map<string, string[]>();
