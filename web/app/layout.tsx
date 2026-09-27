@@ -3,13 +3,13 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Periscope — Below the surface",
+  title: "Periscope - Below the surface",
   description:
-    "Know what your competitors hide. Real prices, every country, past the login. Watched live, backed by evidence.",
+    "Super web intelligence with evidence. Real prices, every country, past the login. Watched live, backed by evidence.",
   openGraph: {
-    title: "Periscope — Below the surface",
+    title: "Periscope - Below the surface",
     description:
-      "Know what your competitors hide. Real prices, every country, past the login.",
+      "Super web intelligence with evidence. Real prices, every country, past the login.",
     type: "website",
   },
 };
