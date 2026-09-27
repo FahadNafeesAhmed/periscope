@@ -2399,13 +2399,22 @@ td a {
 }
 .launcher-row .check-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 10px 0 0;
-  font: 10px var(--font-code);
-  color: var(--muted);
+  font-size: 13px;
+  color: var(--text);
   cursor: pointer;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
+}
+.check-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.check-hint::before {
+  content: "— ";
 }
 .launcher-row .check-row input {
   accent-color: var(--accent);
@@ -2469,7 +2478,12 @@ td a {
 }
 .launcher-flush .launcher-row input {
   border-radius: 9999px;
+  font: 13px var(--font-body);
+  padding: 12px 20px;
 }
 .launcher-flush .primary-action {
   border-radius: 9999px;
+  font: 600 13px var(--font-body);
+  padding: 0 28px;
+  letter-spacing: 0;
 }

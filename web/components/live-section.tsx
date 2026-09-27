@@ -160,11 +160,11 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
       <div className="launcher launcher-flush">
         <div className="launcher-row">
           <div>
-            <input id="helix-target" type="url" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target URL" />
-            <button type="button" className="primary-action" disabled={disabled || busy} onClick={run}>Run</button>
+            <input id="helix-target" type="url" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Enter a competitor's URL" />
+            <button type="button" className="primary-action" disabled={disabled || busy} onClick={run}>{busy ? "Running…" : "Analyze"}</button>
           </div>
-          <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Open the whole site: map every page first, then open the best 50 in every browser the plan allows</label>
-          <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Always compare from other countries ({DEMO_COUNTRIES.join(", ")})</label>
+          <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Scan entire site<span className="check-hint">Maps every page, then opens the top 50 in parallel</span></label>
+          <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare pricing across countries<span className="check-hint">Opens the same page from {DEMO_COUNTRIES.map((c) => countryName(c)).join(", ")}</span></label>
           <p aria-live="polite">{status}</p>
         </div>
       </div>
