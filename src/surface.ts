@@ -25,10 +25,7 @@ export async function scrapeSurface(params: {
   // Live finding (Fahad, Sept 13): on Framer/JS-heavy sites such as ornn.com "readability" comes back nearly empty
   // (15 chars) while "markdown" is complete (2.6k chars), so markdown is the block source; html is kept as the raw
   // artifact for the B6 raw-source proof. Both formats verified live on the same URL.
-  const response = await params.steel.scrape({
-    url: params.url,
-    format: ["markdown", "html"],
-  });
+  const response = await scrapeWithRetry(params.steel, params.url);
 
   const rawHtml = (response as any).content?.html ?? "";
   const rawMarkdown = (response as any).content?.markdown ?? (response as any).content?.readability ?? "";
@@ -60,4 +57,32 @@ export async function scrapeSurface(params: {
   }
 
   return { observations, rawHtml, rawMarkdown };
+}
+
+/**
+ * Steel's scrape endpoint opens a short-lived session that counts against the plan's concurrent limit (10 on Launch).
+ * When the browsers are all busy it answers 429; waiting a few seconds and trying again is the right response, not a
+ * failed page. Six tries over about a minute, then the error surfaces as before.
+ */
+async function scrapeWithRetry(steel: Steel, url: string): Promise<unknown> {
+  let delay = 4000;
+  let target = url;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await steel.scrape({ url: target, format: ["markdown", "html"] });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // sites that link to www.example.com without a www DNS record (or the reverse): try the other host form once
+      if (/could not be resolved|ENOTFOUND/i.test(msg) && target === url) {
+        const u = new URL(url);
+        u.hostname = u.hostname.startsWith("www.") ? u.hostname.slice(4) : `www.${u.hostname}`;
+        target = u.toString();
+        continue;
+      }
+      const limit = /429|concurrent session limit/i.test(msg);
+      if (!limit || attempt >= 6) throw err;
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 1.6, 20_000);
+    }
+  }
 }

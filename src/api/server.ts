@@ -10,7 +10,10 @@ import { bordersGrid } from "../intel/borders-grid.js";
 import { coverage } from "../intel/coverage.js";
 import { diffRuns } from "../intel/diff.js";
 import { priceRows } from "../intel/prices.js";
-import { extractFeatures, summarizeDiff, type Complete } from "../intel/extract.js";
+import { BRIEF_MODEL, extractFeatures, summarizeDiff, type Complete } from "../intel/extract.js";
+import { buildBrief, type Brief } from "../intel/brief.js";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { loadProfiles, profileFor, saveProfile, waitUntilReady } from "../steel/profiles.js";
 import type { LaunchHandle, RunSpec } from "../integration/launch-run.js";
 import type { LiveSessionView } from "../integration/live-sessions.js";
@@ -145,6 +148,8 @@ export function createApi(opts: ApiOptions): Promise<Api> {
     const spec: RunSpec = {
       runId: String(b.runId ?? `run-${Date.now().toString(36)}-${randomUUID().slice(0, 6)}`), competitor: String(b.competitor), url: String(b.url),
       pages: b.pages as string[] | undefined, jobs: b.jobs as RunSpec["jobs"], countries: b.countries as string[] | undefined,
+      maxPages: b.maxPages === undefined ? undefined : Math.max(1, Math.min(1000, Number(b.maxPages))),
+      login: b.login === "ask" ? "ask" : undefined,
       capUsd: b.capUsd === undefined ? undefined : Number(b.capUsd), start: b.start as string | undefined, profileId: b.profileId as string | undefined,
       accountRef: b.accountRef as string | undefined, category: b.category as string | undefined, goal: b.goal as string | undefined,
     };
@@ -204,6 +209,12 @@ export function createApi(opts: ApiOptions): Promise<Api> {
 
   /* ---------------- live sessions ---------------- */
   const sessionsView = (runId?: string) => (opts.liveSessions?.(runId) ?? []).map((s) => ({ ...s, pendingWall: [...pending.values()].find((h) => h.viewerUrl === s.viewerUrl)?.wall ?? null }));
+  // Whole-site runs: the discovered map (pages found, ranked pages opened, documents), empty until discovery finishes.
+  route("GET", "/runs/:id/map", (c) => {
+    if (!runOr404(c)) return;
+    const site = runs.get(c.params.id)?.map;
+    json(c.res, 200, { ok: true, runId: c.params.id, ready: Boolean(site), nodes: site?.nodes ?? 0, edges: site?.edges ?? 0, fetched: site?.fetched ?? 0, sitemap: site?.sitemap ?? false, pages: site?.pages ?? [], documents: site?.documents ?? [], types: site?.types ?? {}, read: site?.read ?? "" });
+  });
   route("GET", "/sessions", (c) => json(c.res, 200, { ok: true, sessions: sessionsView(), steel: Boolean(opts.liveSessions) }));
   route("GET", "/runs/:id/sessions", (c) => { if (runOr404(c)) json(c.res, 200, { ok: true, runId: c.params.id, sessions: sessionsView(c.params.id) }); });
 
@@ -270,6 +281,38 @@ export function createApi(opts: ApiOptions): Promise<Api> {
     };
   };
   route("GET", "/runs/:id/matrix", (c) => { if (runOr404(c)) json(c.res, 200, { ok: true, runId: c.params.id, ...matrixView(c.params.id) }); });
+  // The brief: Claude reads everything the run collected (plus screenshots of the pages that hid the most) and writes
+  // a structured, evidence-bound competitive brief. Built once per request, cached on disk under data/briefs.
+  const briefDir = path.join(process.env.PERISCOPE_DATA_DIR ?? "./data", "briefs");
+  const briefPath = (runId: string) => path.join(briefDir, `${runId.replace(/[^a-zA-Z0-9_.-]/g, "_")}.json`);
+  const briefs = new Map<string, Brief>();
+  const briefInFlight = new Map<string, Promise<Brief>>();
+  const loadBrief = (runId: string): Brief | undefined => {
+    if (briefs.has(runId)) return briefs.get(runId);
+    try { const b = JSON.parse(readFileSync(briefPath(runId), "utf8")) as Brief; briefs.set(runId, b); return b; } catch { return undefined; }
+  };
+  route("GET", "/runs/:id/brief", (c) => {
+    if (!runOr404(c)) return;
+    const b = loadBrief(c.params.id);
+    json(c.res, 200, { ok: true, runId: c.params.id, ready: Boolean(b), building: briefInFlight.has(c.params.id), model: Boolean(opts.complete), brief: b ?? null });
+  });
+  route("POST", "/runs/:id/brief", async (c) => {
+    if (!runOr404(c)) return;
+    if (!opts.complete) return json(c.res, 503, { ok: false, reason: "no model key configured; set ANTHROPIC_API_KEY" });
+    const b = await readBody(c.req).catch(() => ({} as Record<string, unknown>));
+    const cached = loadBrief(c.params.id);
+    if (cached && !b.rebuild) return json(c.res, 200, { ok: true, runId: c.params.id, ready: true, cached: true, brief: cached });
+    let p = briefInFlight.get(c.params.id);
+    if (!p) {
+      const complete = meteredCompletion(storage, c.params.id, opts.complete);
+      p = buildBrief({ storage, runId: c.params.id, complete: (args) => complete({ ...args, model: BRIEF_MODEL }), model: BRIEF_MODEL })
+        .then((brief) => { briefs.set(c.params.id, brief); try { mkdirSync(briefDir, { recursive: true }); writeFileSync(briefPath(c.params.id), JSON.stringify(brief, null, 2)); } catch { /* disk is best-effort */ } return brief; })
+        .finally(() => briefInFlight.delete(c.params.id));
+      briefInFlight.set(c.params.id, p);
+    }
+    try { json(c.res, 200, { ok: true, runId: c.params.id, ready: true, brief: await p }); }
+    catch (err) { json(c.res, 502, { ok: false, reason: `brief failed: ${(err as Error).message.slice(0, 200)}` }); }
+  });
   route("POST", "/runs/:id/extract", async (c) => {
     if (!runOr404(c)) return;
     if (!opts.complete) return json(c.res, 503, { ok: false, reason: "no model key configured; set ANTHROPIC_API_KEY" });
@@ -328,7 +371,8 @@ export function createApi(opts: ApiOptions): Promise<Api> {
 
   return new Promise((resolve, reject) => {
     server.on("error", reject);
-    server.listen(opts.port ?? Number(process.env.PERISCOPE_API_PORT ?? 4747), () => {
+    // hosted platforms (Railway, Render, Fly) hand the port over as PORT
+    server.listen(opts.port ?? Number(process.env.PERISCOPE_API_PORT ?? process.env.PORT ?? 4747), () => {
       const addr = server.address();
       const port = typeof addr === "object" && addr ? addr.port : Number(opts.port);
       resolve({

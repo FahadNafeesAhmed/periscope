@@ -34,6 +34,10 @@ export interface Job {
   accountRef?: string;
   state: JobState;
   reason?: string;
+  /** Reveal jobs: called with every link the rendered page carried; whole-site runs grow their map from it. */
+  onLinks?: (pageUrl: string, links: string[]) => void;
+  /** Walker jobs: open every control on every screen, not just links, and allow more screens. */
+  revealEverything?: boolean;
 }
 
 export interface CoordinatorConfig {
@@ -54,7 +58,8 @@ export interface CoordinatorConfig {
   cancelHandoff?: (jobId: string) => Promise<void>;
 }
 
-const MAX_CONCURRENT = 10;
+/** Matches the Steel plan: 10 on Launch, 100 on Scale. Same knob as the session pool. */
+const MAX_CONCURRENT = Math.max(1, Number(process.env.PERISCOPE_MAX_CONCURRENT ?? 10));
 
 /**
  * Job queue over Person C's session pool.
@@ -114,28 +119,36 @@ export class Coordinator {
 
     const promises = new Set<Promise<void>>();
 
-    for (const job of this.jobs) {
-      // Wait if at capacity
-      while (this.running.size >= MAX_CONCURRENT) {
-        await Promise.race(promises);
-      }
-      if (job.state === "cancelled") continue;
+    // Jobs enqueued while the run is in flight (a whole-site run grows as pages reveal their links) are picked up
+    // too: keep going until the queue is drained and nothing is running.
+    let next = 0;
+    while (true) {
+      while (next < this.jobs.length) {
+        const job = this.jobs[next++];
+        // Wait if at capacity
+        while (this.running.size >= MAX_CONCURRENT) {
+          await Promise.race(promises);
+        }
+        if (job.state === "cancelled") continue;
 
-      // Check run budget
-      if (!this.meter.canProceed(job.id)) {
-        job.state = "cancelled";
-        job.reason = "Run budget exceeded";
-        await this.emitJobState(job);
-        continue;
-      }
+        // Check run budget
+        if (!this.meter.canProceed(job.id)) {
+          job.state = "cancelled";
+          job.reason = "Run budget exceeded";
+          await this.emitJobState(job);
+          continue;
+        }
 
-      this.running.add(job.id);
-      this.controllers.set(job.id, new AbortController());
-      const p = this.executeJob(job).finally(() => {
-        this.running.delete(job.id);
-        promises.delete(p);
-      });
-      promises.add(p);
+        this.running.add(job.id);
+        this.controllers.set(job.id, new AbortController());
+        const p = this.executeJob(job).finally(() => {
+          this.running.delete(job.id);
+          promises.delete(p);
+        });
+        promises.add(p);
+      }
+      if (!promises.size) break;
+      await Promise.race(promises);
     }
 
     // Wait for all to complete
@@ -314,7 +327,17 @@ export class Coordinator {
       let page = handle.page;
 
       try {
-        for (const url of job.urls) {
+        for (let i = 0; i < job.urls.length; i++) {
+          const url = job.urls[i];
+          // A session stops autonomous work at its deadline. If the next page would not fit, hand the remaining pages to a
+          // fresh browser instead of losing them when this one is closed under us.
+          const msLeft = new Date(handle.deadlineAt).getTime() - Date.now();
+          if (i > 0 && msLeft < 4 * 60_000) {
+            const rest = job.urls.slice(i);
+            this.enqueue([{ type: "reveal", competitor: job.competitor, urls: rest, vantage: job.vantage, onLinks: job.onLinks }]);
+            job.urls = job.urls.slice(0, i);
+            break;
+          }
           await page.goto(url, { waitUntil: "load", timeout: 60_000 });
           await page.waitForTimeout(1000);
 
@@ -330,7 +353,7 @@ export class Coordinator {
           });
           const surfaceBaseline = surfaceResult.rawMarkdown || surfaceResult.rawHtml;
 
-          await revealDeterministic({
+          const revealed = await revealDeterministic({
             runId: this.config.runId,
             jobId: job.id,
             competitor: job.competitor,
@@ -340,6 +363,7 @@ export class Coordinator {
             handle,
             sink: this.config.sink,
           });
+          if (job.onLinks) { try { job.onLinks(url, revealed.links); } catch { /* the map is best-effort */ } }
 
           if (useModel && !sh) sh = await createStagehand(handle, { meter: this.meter, sink: this.config.sink, jobId: job.id, runId: this.config.runId });
           if (sh) {
@@ -417,6 +441,9 @@ export class Coordinator {
                 handle,
                 sink: this.config.sink,
                 autoLogin: Boolean(job.accountRef), // Steel injects the stored credentials for this account; the walker signs in by itself
+                // signed-in spaces hide most of their facts behind tabs, expanders and menus: run the full reveal on every screen
+                revealOnScreens: job.revealEverything ? ["consent", "tabs", "selects", "toggles", "showMore", "hover", "modals", "documents", "menus", "sweep"] : undefined,
+                maxScreens: job.revealEverything ? 150 : undefined,
               });
 
           if (result.stoppedReason === "budget") {
