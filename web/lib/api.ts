@@ -27,6 +27,13 @@ export type CoveragePage = { url: string; surface: number; hidden: number; misse
 export type BordersGrid = { url: string; shared: number; differsByCountry: boolean; differsByDevice: boolean; countries: Array<{ country: string; uniqueToCountry: string[]; prices: string[] }> };
 export type PriceRow = { url: string; country: string | null; device: string; vantage: string; amount: string; currency: string | null; period: string | null; text: string; observationId: string; layer: string };
 export type MatrixRow = { id: string; competitor: string; feature: string; status: string; value: string | null; evidence: string[] };
+export type Observation = {
+  id: string; runId: string; competitor: string; url: string; layer: string; kind: string; text: string; vantage: Vantage;
+  missedByFetch?: boolean; revealedBy?: { action?: string; label?: string }; viewerUrl?: string; capturedAt?: string;
+};
+export type DiffLine = { url: string; vantage: string; layer: string; kind: string; text: string };
+export type RunDiff = { fromRunId: string; toRunId: string; added: DiffLine[]; removed: DiffLine[]; priceChanges: DiffLine[]; unchanged: number };
+export type ResearchAnswer = { mode: string; observations: Observation[]; claims: Array<{ text: string; evidenceIds: string[] }>; note?: string };
 
 export async function apiGet<T>(path: string): Promise<T | null> {
   try {
