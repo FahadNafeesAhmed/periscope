@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   apiGet, apiPost, briefToMarkdown, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, requestBrief, siteMap, TARGET_URL, usePoll, type BriefView,
-  type BordersGrid, type BordersPlan, type CoveragePage, type Handoff, type LiveSession, type MatrixRow, type PriceRow, type RunSummary, type RunView, type StoredEvent,
+  type BordersGrid, type BordersPlan, type CoveragePage, type Handoff, type LiveSession, type MatrixRow, type PriceRow, type RunView, type StoredEvent,
 } from "@/lib/api";
 import { newTraceState, storyFor, storyOrder, updateTrace, type Story, type TraceState } from "@/lib/story";
 
@@ -19,16 +19,22 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
   const connected = Boolean(health?.ok);
   useEffect(() => { onConnection?.(connected); }, [connected, onConnection]);
 
-  const sessions = usePoll(() => apiGet<{ sessions: LiveSession[] }>("/sessions").then((r) => r?.sessions ?? null), 2000);
+  const [followed, setFollowed] = useState<string[]>([]);
+  const followedKey = followed.join(",");
+  // Only the browsers of the runs this visitor launched: the brain is shared, and another visitor's session is not this search
+  const sessions = usePoll(async () => {
+    if (!followed.length) return [] as LiveSession[];
+    const lists = await Promise.all(followed.map((id) => apiGet<{ sessions: LiveSession[] }>(`/runs/${id}/sessions`).then((r) => r?.sessions ?? [])));
+    const seen = new Set<string>();
+    return lists.flat().filter((s) => (seen.has(s.sessionId) ? false : (seen.add(s.sessionId), true)));
+  }, 2000, [followedKey]);
   const handoffs = usePoll(() => apiGet<{ handoffs: Handoff[] }>("/handoffs").then((r) => r?.handoffs ?? null), 2000);
-  const runs = usePoll(() => apiGet<{ runs: RunSummary[] }>("/runs?limit=30").then((r) => r?.runs ?? null), 4000);
 
   const [target, setTarget] = useState("");
   const [compare, setCompare] = useState(false);
   const [wholeSite, setWholeSite] = useState(false);
   const [askLogin, setAskLogin] = useState(true);
   const [mapRun, setMapRun] = useState<string | null>(null);
-  const [followed, setFollowed] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -36,10 +42,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
   const [focusedIdx, setFocusedIdx] = useState(0);
 
   // Default to the latest Helix runs so the page is never empty.
-  const followedRuns = useMemo(() => {
-    if (followed.length) return followed;
-    return (runs ?? []).filter((r) => r.competitors.includes("helix-ledger")).slice(0, 3).map((r) => r.id);
-  }, [followed, runs]);
+  const followedRuns = useMemo(() => followed, [followed]);
 
   // Browser trace, accumulated across polls.
   const traceRef = useRef<TraceState>(newTraceState());
@@ -116,6 +119,9 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
     const url = target.trim().replace(/\/$/, "");
     if (!/^https?:\/\//i.test(url)) { setNote("Enter a full address starting with https://"); return; }
     setBusy(true);
+    // a new search is a clean slate: no old browsers, counters, cards or country plan from the previous one
+    setFollowed([]); setMapRun(null); pending.current = null; setShowAll(false);
+    traceRef.current = newTraceState(); setTraceVersion((v) => v + 1);
     if (isDemoSite(url)) {
       setNote("Starting…");
       const { parse, login, borders } = await launchHelixDemo(url);
@@ -319,6 +325,7 @@ function Intelligence({ runIds }: { runIds: string[] }) {
   const [briefError, setBriefError] = useState("");
   const health = usePoll(() => apiGet<{ model: boolean }>("/health"), 15000);
   const key = runIds.join(",");
+  useEffect(() => { setModelBrief(null); setBriefState("idle"); setBriefError(""); setBriefOpen(false); }, [key]);
   // Ask Claude for the brief of the main run (the parse or site run; countries and login runs feed the same competitor).
   async function buildModelBrief(rebuild = false) {
     const main = [...runIds].sort((a, b) => storyOrder(a) - storyOrder(b))[0];

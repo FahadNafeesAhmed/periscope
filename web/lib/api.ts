@@ -54,6 +54,7 @@ export function usePoll<T>(load: () => Promise<T | null>, intervalMs: number, de
   loader.current = load;
   useEffect(() => {
     let cancelled = false;
+    setValue(null); // the deps changed: whatever was on screen belonged to the previous run, not this one
     const tick = async () => { const v = await loader.current(); if (!cancelled && v !== null) setValue(v); };
     void tick();
     const id = setInterval(tick, intervalMs);
