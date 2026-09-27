@@ -26,6 +26,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
   const [target, setTarget] = useState("");
   const [compare, setCompare] = useState(false);
   const [wholeSite, setWholeSite] = useState(false);
+  const [askLogin, setAskLogin] = useState(true);
   const [mapRun, setMapRun] = useState<string | null>(null);
   const [followed, setFollowed] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -128,7 +129,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
       if (errors.length) setNote((n) => `${n}${n ? " · " : ""}${errors.join(" · ")}`);
     } else {
       setNote(wholeSite ? "Mapping the site…" : "Starting…");
-      const r = wholeSite ? await launchSiteRun(url) : await launchCustomRun(url);
+      const r = wholeSite ? await launchSiteRun(url, { askLogin }) : await launchCustomRun(url);
       if (r.runId) {
         setFollowed([r.runId]);
         if (wholeSite) setMapRun(r.runId);
@@ -170,10 +171,13 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
             <button type="button" className={`primary-action${busy ? " analyzing" : ""}`} disabled={disabled || busy} onClick={run}>{busy ? "Running…" : "Analyze"}</button>
           </div>
           <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Scan entire site<span className="check-hint">Maps every page, then opens all of them in waves of browsers, clicking every menu, toggle and control</span></label>
+          {wholeSite && (
+            <label className="check-row"><input type="checkbox" checked={askLogin} onChange={(e) => setAskLogin(e.target.checked)} /> Ask me to sign in if there is a login<span className="check-hint">You type your own credentials inside the live browser. Periscope never sees them. Then it reads every screen behind the login.</span></label>
+          )}
           <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare pricing across countries<span className="check-hint">Opens the same page from {DEMO_COUNTRIES.map((c) => countryName(c)).join(", ")}, etc.</span></label>
           {!disabled && !busy && target.trim().length > 10 && (
             <div className="run-plan">
-              <span>Plan:</span> Open {wholeSite ? "every page (up to 400)" : "this page"} in {compare ? `${DEMO_COUNTRIES.length + 1} browsers (home + ${DEMO_COUNTRIES.join(", ")})` : isDemoSite(target) ? "3 browsers (read, sign in, then countries if needed)" : "1 browser"}{wholeSite ? ", map the site first" : ""}. Takes ~{wholeSite ? "3–15 min depending on site size" : "45 sec"}. The target sees normal browser traffic.
+              <span>Plan:</span> Open {wholeSite ? "every page (up to 400)" : "this page"} in {compare ? `${DEMO_COUNTRIES.length + 1} browsers (home + ${DEMO_COUNTRIES.join(", ")})` : isDemoSite(target) ? "3 browsers (read, sign in, then countries if needed)" : "1 browser"}{wholeSite ? ", map the site first" : ""}{wholeSite && askLogin ? ", and ask you to sign in if the site has a login" : ""}. Takes ~{wholeSite ? "3–15 min depending on site size" : "45 sec"}. The target sees normal browser traffic.
             </div>
           )}
           <p aria-live="polite">{status}</p>
@@ -261,8 +265,8 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
           {(handoffs ?? []).map((h) => (
             <div key={h.jobId} className="wall-card">
               <div className="wall-label">{h.wall.toUpperCase()} wall · <span className="mono">{h.jobId.slice(0, 8)}</span></div>
-              <p>Clear it in the live frame, then resume. <a href={h.viewerUrl} target="_blank" rel="noreferrer">Open live view</a></p>
-              <button type="button" className="secondary-action" onClick={() => resume(h)}>I cleared it, resume</button>
+              <p>{h.wall === "login" ? "Sign in yourself inside the live browser. Periscope never sees your password. Then press resume and it reads every screen behind the login." : "Clear it in the live frame, then resume."} <a href={h.viewerUrl} target="_blank" rel="noreferrer">Open live view</a></p>
+              <button type="button" className="secondary-action" onClick={() => resume(h)}>{h.wall === "login" ? "I'm signed in, resume" : "I cleared it, resume"}</button>
             </div>
           ))}
           <div className="panel-caption">What the agents are doing</div>

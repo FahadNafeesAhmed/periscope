@@ -99,11 +99,12 @@ export async function launchCustomRun(url: string): Promise<Launch & { borders?:
 }
 
 /** The whole site: map it over plain fetch, rank the pages, open the best ones in parallel browsers. */
-export async function launchSiteRun(url: string, maxPages = 400): Promise<Launch & { borders?: BordersPlan }> {
+export async function launchSiteRun(url: string, opts: { maxPages?: number; askLogin?: boolean } = {}): Promise<Launch & { borders?: BordersPlan }> {
+  const maxPages = opts.maxPages ?? 400;
   const u = new URL(url);
   const competitor = u.hostname.replace(/^www\./, "");
   const stamp = stampNow();
-  const r = await launch({ competitor, url: u.origin, pages: [u.pathname || "/"], jobs: ["map"], maxPages, capUsd: 60, category: "demo", runId: `site-parse-${stamp}` }, `web-site-parse-${stamp}`);
+  const r = await launch({ competitor, url: u.origin, pages: [u.pathname || "/"], jobs: ["map"], maxPages, capUsd: 60, category: "demo", runId: `site-parse-${stamp}`, ...(opts.askLogin ? { login: "ask" } : {}) }, `web-site-parse-${stamp}`);
   return r.runId ? { ...r, borders: { competitor, url: u.origin, pages: [u.pathname || "/"], runId: `site-borders-${stamp}`, category: "demo" } } : r;
 }
 
