@@ -160,7 +160,7 @@ export function Landing() {
           className="console-section intro-section"
           aria-labelledby="agents-title"
         >
-          <div className="console-intro">
+          {/* <div className="console-intro">
             <div>
               <h1 id="agents-title">
                 Know what your competitors hide.
@@ -171,7 +171,7 @@ export function Landing() {
             <p>
               Real prices. Every country. Past the login. Watch it happen live.
             </p>
-          </div>
+          </div> */}
         </section>
         <LiveSection onConnection={setConnected} />
         {!connected && (
@@ -180,7 +180,7 @@ export function Landing() {
             className="console-section"
             aria-label="Static schematic"
           >
-            <div className="console-toolbar mono">
+            <div className="console-toolbar">
               <span>Browser operations</span>
               <span className="mode-label">
                 Offline preview · live browsers appear when a run starts
@@ -191,7 +191,7 @@ export function Landing() {
                 className="telemetry"
                 aria-label="Selected agent telemetry"
               >
-                <div className="panel-caption mono">Selected agent</div>
+                <div className="panel-caption">Selected agent</div>
                 <h2>{job.name}</h2>
                 <p className="job-goal">{job.goal}</p>
                 <svg
@@ -251,7 +251,7 @@ export function Landing() {
                     <dd>{playerUrl ? "Player linked" : "Not connected"}</dd>
                   </div>
                 </dl>
-                <div className="panel-caption mono">Execution path</div>
+                <div className="panel-caption">Execution path</div>
                 <ol className="compact-trace">
                   {job.steps.map((step, i) => (
                     <li key={step}>
@@ -286,7 +286,7 @@ export function Landing() {
                     ● ● ●
                   </span>
                   <span>{job.target}</span>
-                  <span className="mono">
+                  <span>
                     {recording
                       ? "Demo capture"
                       : playerUrl
@@ -374,7 +374,7 @@ export function Landing() {
                 </div>
                 <div className="browser-status">
                   <div>
-                    <span className="mono">Objective</span>
+                    <span className="field-label">Objective</span>
                     <p>{job.goal}</p>
                   </div>
                   <button
@@ -399,7 +399,7 @@ export function Landing() {
                         onClick={() => selectJob(j.id)}
                         aria-pressed={jobId === j.id}
                       >
-                        <span className="mono">{j.name}</span>
+                        <span>{j.name}</span>
                         <strong>{j.result}</strong>
                         <small>{j.detail}</small>
                       </button>
@@ -456,7 +456,7 @@ export function Landing() {
                     >
                       <div className="chart-title">
                         <strong>{a.name}</strong>
-                        <span className="mono">
+                        <span>
                           {v ?? "N/A"}
                           {v !== null && <span className="muted"> / 65</span>}
                         </span>
@@ -470,7 +470,7 @@ export function Landing() {
               </div>
             </div>
             <div className="benchmark-explanation">
-              <span className="panel-caption mono">How to read this</span>
+              <span className="panel-caption">How to read this</span>
               <p>
                 Periscope collected <strong>63</strong> facts. Opus reported{" "}
                 <strong>58</strong> after reading that material.

@@ -169,7 +169,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         </div>
       </div>
 
-      <div className="chips mono" aria-label="Browsers so far">
+      <div className="chips" aria-label="Browsers so far">
         <span><b>{stats.browsers}</b> browsers opened</span>
         <span><b>{stats.countries.size}</b> countries{stats.countries.size ? ` (${[...stats.countries].sort().join(", ")})` : ""}</span>
         <span><b>{stats.devices.size}</b> device profiles</span>
@@ -183,7 +183,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
           <div className="browser-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {shown.map((s) => (
               <figure key={s.sessionId} className="browser-frame">
-                <figcaption className="mono">
+                <figcaption>
                   <strong>{s.competitor ?? ""}</strong>
                   <span className="tag">{s.purpose ?? "session"}</span>
                   <span className="tag steel">{s.vantage.country ? `${countryName(s.vantage.country)} · proxy` : "home region"}</span>
@@ -193,7 +193,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
                   <small>{(s.currentUrl ?? "").slice(0, 80)}</small>
                 </figcaption>
                 <iframe title={`Browser session ${s.sessionId}`} src={s.playerUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
-                <div className="frame-foot mono">Session {s.sessionId.slice(0, 8)} · <a href={s.viewerUrl} target="_blank" rel="noreferrer">open live view</a></div>
+                <div className="frame-foot"><span className="mono">{s.sessionId.slice(0, 8)}</span> · <a href={s.viewerUrl} target="_blank" rel="noreferrer">open live view</a></div>
               </figure>
             ))}
           </div>
@@ -207,16 +207,16 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         <aside className="live-side">
           {(handoffs ?? []).map((h) => (
             <div key={h.jobId} className="wall-card">
-              <div className="mono">{h.wall.toUpperCase()} WALL · JOB {h.jobId.slice(0, 8)} · GENERATION {h.generation}</div>
+              <div className="wall-label">{h.wall.toUpperCase()} wall · <span className="mono">{h.jobId.slice(0, 8)}</span></div>
               <p>Clear it in the live frame, then resume. <a href={h.viewerUrl} target="_blank" rel="noreferrer">Open live view</a></p>
               <button type="button" className="secondary-action" onClick={() => resume(h)}>I cleared it, resume</button>
             </div>
           ))}
-          <div className="panel-caption mono">What the agents are doing</div>
+          <div className="panel-caption">What the agents are doing</div>
           {followedRuns.length === 0 && <p className="muted">Start a run to follow it here.</p>}
           {[...followedRuns].sort((a, b) => storyOrder(a) - storyOrder(b)).map((id) => <StoryCard key={id} runId={id} />)}
           <details className="trace-panel">
-            <summary className="mono">Browser trace<span>{trace.length ? ` · ${trace.length} events` : ""}</span></summary>
+            <summary>Browser trace<span>{trace.length ? ` · ${trace.length} events` : ""}</span></summary>
             <ol className="trace-log">
               {trace.length === 0 && <li className="muted">Waiting for the first browser.</li>}
               {[...trace].reverse().slice(0, 40).map((t, i) => <li key={i} className={t.kind}><span className="mono">{t.at}</span>{t.text}</li>)}
@@ -238,7 +238,7 @@ function StoryCard({ runId }: { runId: string }) {
   if (!story) return null;
   return (
     <div className="story">
-      <div className="story-head"><span className="tag">{story.kind}</span> <strong>{story.competitor}</strong> {story.badges.map((b) => <span key={b} className="tag steel">{b}</span>)} <span className="muted mono">{story.status}</span></div>
+      <div className="story-head"><span className="tag">{story.kind}</span> <strong>{story.competitor}</strong> {story.badges.map((b) => <span key={b} className="tag steel">{b}</span>)} <span className="muted">{story.status}</span></div>
       {story.lines.map((l, i) => <p key={i} className={`story-line ${l.tone}`} dangerouslySetInnerHTML={{ __html: l.html }} />)}
     </div>
   );
@@ -261,7 +261,7 @@ function Intelligence({ runIds }: { runIds: string[] }) {
   const tabs: Array<[typeof tab, string]> = [["coverage", "Coverage"], ["countries", "Countries"], ["prices", "Prices"], ["matrix", "Feature matrix"]];
   return (
     <div className="intel">
-      <div className="panel-caption mono">What Periscope learned · every row links back to a browser session</div>
+      <div className="panel-caption">What Periscope learned</div>
       <div className="view-controls" aria-label="Intelligence views">{tabs.map(([id, label]) => <button type="button" key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
       <div className="table-region" role="region" tabIndex={0}>
         {!runIds.length && <p className="muted">Nothing yet. Start a run above.</p>}
