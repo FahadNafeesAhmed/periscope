@@ -157,7 +157,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         <div className="hero-main">
           <div className="console-section-title">
             <div>
-              <h2 id="live-title">Competitive intelligence,<br /><span className="muted">with evidence.</span></h2>
+              <h2 id="live-title">Super web intelligence,<br /><span className="muted">with evidence.</span></h2>
             </div>
             <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries, then extracts every price, feature, and plan it finds.</p>
           </div>
@@ -166,7 +166,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         <div className="launcher-row">
           <div>
             <input id="helix-target" type="url" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Enter a competitor's URL" />
-            <button type="button" className="primary-action" disabled={disabled || busy} onClick={run}>{busy ? "Running…" : "Analyze"}</button>
+            <button type="button" className={`primary-action${busy ? " analyzing" : ""}`} disabled={disabled || busy} onClick={run}>{busy ? "Running…" : "Analyze"}</button>
           </div>
           <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Scan entire site<span className="check-hint">Maps every page, then opens all of them in waves of browsers, clicking every menu, toggle and control</span></label>
           <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare pricing across countries<span className="check-hint">Opens the same page from {DEMO_COUNTRIES.map((c) => countryName(c)).join(", ")}, etc.</span></label>
