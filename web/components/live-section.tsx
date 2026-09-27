@@ -295,8 +295,14 @@ function StoryCard({ runId }: { runId: string }) {
   );
 }
 
+function copyText(text: string, setter: (msg: string) => void) {
+  navigator.clipboard.writeText(text).then(() => setter("Copied!"), () => setter("Copy failed"));
+  setTimeout(() => setter(""), 2000);
+}
+
 function Intelligence({ runIds }: { runIds: string[] }) {
   const [tab, setTab] = useState<"coverage" | "countries" | "prices" | "matrix">("coverage");
+  const [copyMsg, setCopyMsg] = useState("");
   const key = runIds.join(",");
   const data = usePoll(async () => {
     const out = { coverage: [] as CoveragePage[], grids: [] as BordersGrid[], prices: [] as PriceRow[], matrix: [] as MatrixRow[], note: "" };
@@ -309,25 +315,43 @@ function Intelligence({ runIds }: { runIds: string[] }) {
     }
     return out;
   }, 10000, [key]);
+
+  const hasData = data && ((tab === "coverage" && data.coverage.length) || (tab === "countries" && data.grids.length) || (tab === "prices" && data.prices.length) || (tab === "matrix" && data.matrix.length));
+
+  function copyTable() {
+    if (!data) return;
+    let text = "";
+    if (tab === "prices") text = ["Country\tAmount\tCurrency\tPeriod\tText", ...data.prices.map((r) => `${countryName(r.country) ?? "home"}\t${r.amount}\t${r.currency ?? ""}\t${r.period ?? ""}\t${r.text}`)].join("\n");
+    else if (tab === "matrix") text = ["Competitor\tFeature\tStatus\tValue", ...data.matrix.map((r) => `${r.competitor}\t${r.feature}\t${r.status}\t${r.value ?? ""}`)].join("\n");
+    else if (tab === "coverage") text = ["Page\tFetch saw\tRevealed\tMissed", ...data.coverage.map((p) => `${p.url}\t${p.surface}\t${p.hidden}\t${p.counter}`)].join("\n");
+    else if (tab === "countries") text = data.grids.map((g) => `${g.url}\n${g.countries.map((c) => `  ${countryName(c.country)}: ${c.prices.join("; ")}`).join("\n")}`).join("\n\n");
+    copyText(text, setCopyMsg);
+  }
+
   const tabs: Array<[typeof tab, string]> = [["coverage", "Coverage"], ["countries", "Countries"], ["prices", "Prices"], ["matrix", "Feature matrix"]];
   return (
     <div className="intel">
-      <div className="panel-caption">What Periscope learned</div>
+      <div className="intel-header">
+        <div className="panel-caption">What Periscope learned</div>
+        {hasData && <div className="intel-actions">
+          <button type="button" className="copy-btn" onClick={copyTable}>{copyMsg || "Copy table"}</button>
+        </div>}
+      </div>
       <div className="view-controls" aria-label="Intelligence views">{tabs.map(([id, label]) => <button type="button" key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
       <div className="table-region" role="region" tabIndex={0}>
-        {!runIds.length && <p className="muted">Nothing yet. Start a run above.</p>}
+        {!runIds.length && <p className="muted">Nothing yet. Enter a URL above and press Analyze.</p>}
         {tab === "coverage" && data && (data.coverage.length ? <table><thead><tr><th>Page</th><th>Fetch saw</th><th>Revealed</th><th>Missed by fetch</th><th>Documents</th><th>Vantages</th><th>Revealed by</th></tr></thead><tbody>{data.coverage.map((p, i) => <tr key={p.url + i}><td>{p.url.replace(/^https?:\/\//, "")}</td><td>{p.surface}</td><td>{p.hidden}</td><td className="accent">{p.counter}</td><td>{p.documents}</td><td>{p.vantages.length}</td><td>{Object.entries(p.byAction).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${k} (${v})`).join(", ")}</td></tr>)}</tbody></table> : <p className="muted">No pages yet.</p>)}
         {tab === "countries" && data && (data.grids.length ? data.grids.map((g) => (
           <div key={g.url} className="grid-block">
-            <div className="mono muted">{g.url.replace(/^https?:\/\//, "")} · differs by country: <b>{g.differsByCountry ? "yes" : "no"}</b> · by device: <b>{g.differsByDevice ? "yes" : "no"}</b></div>
+            <div className="muted">{g.url.replace(/^https?:\/\//, "")} · differs by country: <b>{g.differsByCountry ? "yes" : "no"}</b> · by device: <b>{g.differsByDevice ? "yes" : "no"}</b></div>
             <div className="country-cols">{g.countries.map((c) => (
               <div key={c.country}><div className="country-head"><strong>{countryName(c.country) ?? c.country}</strong> <span className="tag steel">via proxy</span></div>
                 {c.prices.slice(0, 6).map((l, i) => <div key={i} className="line price">{l.slice(0, 110)}</div>)}
                 {c.uniqueToCountry.filter((l) => !c.prices.includes(l)).slice(0, 4).map((l, i) => <div key={i} className="line">{l.slice(0, 110)}</div>)}
               </div>))}</div>
           </div>)) : <p className="muted">No country comparison yet. It runs when the page gives a reason, or when you tick the box above.</p>)}
-        {tab === "prices" && data && (data.prices.length ? <table><thead><tr><th>Country</th><th>Device</th><th>Amount</th><th>Currency</th><th>Period</th><th>Text</th><th>Layer</th></tr></thead><tbody>{data.prices.slice(0, 80).map((r) => <tr key={r.observationId}><td>{countryName(r.country) ?? "home"}</td><td>{r.device}</td><td className="accent">{r.amount}</td><td>{r.currency ?? ""}</td><td>{r.period ?? ""}</td><td>{r.text.slice(0, 90)}</td><td>{r.layer}</td></tr>)}</tbody></table> : <p className="muted">No price lines yet.</p>)}
-        {tab === "matrix" && data && (data.matrix.length ? <table><thead><tr><th>Competitor</th><th>Feature</th><th>Status</th><th>Value</th><th>Evidence</th></tr></thead><tbody>{data.matrix.map((r) => <tr key={r.id}><td>{r.competitor}</td><td>{r.feature}</td><td>{r.status}</td><td>{(r.value ?? "").slice(0, 100)}</td><td>{r.evidence.length}</td></tr>)}</tbody></table> : <p className="muted">{data.note || "The matrix fills a minute after a run completes."}</p>)}
+        {tab === "prices" && data && (data.prices.length ? <table><thead><tr><th>Country</th><th>Device</th><th>Amount</th><th>Currency</th><th>Period</th><th>Text</th><th>Layer</th><th></th></tr></thead><tbody>{data.prices.slice(0, 80).map((r) => <tr key={r.observationId}><td>{countryName(r.country) ?? "home"}</td><td>{r.device}</td><td className="accent">{r.amount}</td><td>{r.currency ?? ""}</td><td>{r.period ?? ""}</td><td>{r.text.slice(0, 90)}</td><td>{r.layer}</td><td><button type="button" className="row-copy" onClick={() => copyText(`${r.amount} ${r.currency ?? ""} ${r.period ?? ""} (${countryName(r.country) ?? "home"}) — ${r.text}`, setCopyMsg)}>Copy</button></td></tr>)}</tbody></table> : <p className="muted">No price lines yet.</p>)}
+        {tab === "matrix" && data && (data.matrix.length ? <table><thead><tr><th>Competitor</th><th>Feature</th><th>Status</th><th>Value</th><th>Evidence</th><th></th></tr></thead><tbody>{data.matrix.map((r) => <tr key={r.id}><td>{r.competitor}</td><td>{r.feature}</td><td>{r.status}</td><td>{(r.value ?? "").slice(0, 100)}</td><td>{r.evidence.length}</td><td><button type="button" className="row-copy" onClick={() => copyText(`${r.competitor}: ${r.feature} — ${r.status}${r.value ? ` (${r.value})` : ""}`, setCopyMsg)}>Copy</button></td></tr>)}</tbody></table> : <p className="muted">{data.note || "The matrix fills a minute after a run completes."}</p>)}
       </div>
     </div>
   );

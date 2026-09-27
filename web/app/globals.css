@@ -2688,3 +2688,45 @@ td a {
   font-weight: 600;
   color: var(--text);
 }
+/* Intel action buttons */
+.intel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+.intel-header .panel-caption {
+  margin-bottom: 0;
+}
+.intel-actions {
+  display: flex;
+  gap: 8px;
+}
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--structure);
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.copy-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.row-copy {
+  background: transparent;
+  border: 0;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+tr:hover .row-copy {
+  opacity: 1;
+}
+.row-copy:hover {
+  color: var(--accent);
+}
