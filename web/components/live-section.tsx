@@ -154,9 +154,9 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
     <section id="live" className="console-section live-section" aria-labelledby="live-title">
       <div className="console-section-title">
         <div>
-          <h2 id="live-title">Watch it happen.<br /><span className="muted">Every frame is a real browser.</span></h2>
+          <h2 id="live-title">Competitive intelligence,<br /><span className="muted">with evidence.</span></h2>
         </div>
-        <p>One browser reads the page and clicks what a scraper can&apos;t. One signs in. If the page hints that prices change by country, more open, each from a different country.</p>
+        <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries — then extracts every price, feature, and plan it finds.</p>
       </div>
 
       <div className="launcher launcher-flush">
@@ -171,13 +171,16 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
         </div>
       </div>
 
-      <div className="chips" aria-label="Browsers so far">
-        <span><b>{stats.browsers}</b> browsers opened</span>
-        <span><b>{stats.countries.size}</b> countries{stats.countries.size ? ` (${[...stats.countries].sort().join(", ")})` : ""}</span>
-        <span><b>{stats.devices.size}</b> device profiles</span>
-        <span><b>{stats.walls}</b> human handoffs</span>
-        <span><b>{live.length}</b> live now</span>
-      </div>
+      <Intelligence runIds={followedRuns} />
+
+      <details className="evidence-section" open={live.length > 0 || undefined}>
+        <summary className="evidence-toggle">
+          <span>Live browsers</span>
+          <span className="chips-inline">
+            {live.length > 0 && <><b>{live.length}</b> active</>}
+            {stats.countries.size > 0 && <> · <b>{stats.countries.size}</b> countries</>}
+          </span>
+        </summary>
 
       <div className="live-layout">
         <div className="browser-wall">
@@ -263,8 +266,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
           </details>
         </aside>
       </div>
-
-      <Intelligence runIds={followedRuns} />
+      </details>
     </section>
   );
 }

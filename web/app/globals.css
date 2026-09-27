@@ -2641,3 +2641,37 @@ td a {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
+/* Collapsible evidence/browser section */
+.evidence-section {
+  margin-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+.evidence-toggle {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.evidence-toggle::-webkit-details-marker { display: none; }
+.evidence-toggle::after {
+  content: "+";
+  font-size: 16px;
+  color: var(--accent);
+}
+.evidence-section[open] .evidence-toggle::after {
+  content: "\2013";
+}
+.chips-inline {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.chips-inline b {
+  color: var(--accent);
+  font-weight: 600;
+}
