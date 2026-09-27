@@ -29,16 +29,12 @@ export const SAMPLE_BRIEF: BriefData = {
   grids: [{
     url: `${T}/pricing`, shared: 0, differsByCountry: true, differsByDevice: false,
     countries: [
-      { country: "CA", uniqueToCountry: [], prices: ["CA$26 per user per month, billed annually"] },
       { country: "US", uniqueToCountry: [], prices: ["$29 per user per month"] },
       { country: "DE", uniqueToCountry: [], prices: ["€31 per user per month"] },
     ],
   }],
   prices: [],
-  matrix: [
-    { id: "team", competitor: "helix-ledger", feature: "Team plan", status: "observed", value: null, evidence: ["pricing"] },
-    { id: "pro", competitor: "helix-ledger", feature: "Pro plan", status: "observed", value: null, evidence: ["pricing"] },
-  ],
+  matrix: [],
   matrixNote: "",
   hidden,
   inside,

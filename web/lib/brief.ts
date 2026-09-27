@@ -97,14 +97,18 @@ export function findingsFor(b: BriefData): Finding[] {
     out.push({ id: `hidden-${o.id}`, kind: "hidden", lead: `Only visible ${revealPhrase(o)}:`, fact: o.text, tail: ".", source: `${pageName(o.url)} · missed by a plain fetch` });
   }
   const limits = b.matrix.filter((r) => /limited|enterprise/i.test(`${r.status} ${r.value ?? ""}`));
-  if (limits.length) out.push({ id: "limits", kind: "limit", lead: "Gated to higher plans:", fact: limits.slice(0, 3).map((r) => `${r.feature}${r.value ? ` (${r.value})` : ""}`).join("; "), tail: ".", source: `feature extraction · ${limits.reduce((s, r) => s + r.evidence.length, 0)} source lines` });
+  if (limits.length) out.push({ id: "limits", kind: "limit", lead: "Gated to higher plans:", fact: limits.slice(0, 3).map((r) => (r.value ? `${r.feature}: ${r.value}` : r.feature)).join("; "), tail: ".", source: `feature extraction · ${limits.reduce((s, r) => s + r.evidence.length, 0)} source lines` });
   if (b.inside.length) {
     const pick = b.inside.filter((o) => /\d/.test(o.text)).slice(0, 2);
     const facts = (pick.length ? pick : b.inside.slice(0, 2)).map((o) => o.text);
-    out.push({ id: "inside", kind: "inside", lead: "Signed in as a customer:", fact: facts.join("; "), tail: ".", source: `${new Set(b.inside.map((o) => pathOf(o.url))).size} screens behind the login` });
+    out.push({ id: "inside", kind: "inside", lead: "Signed in as a customer:", fact: facts.join("; "), tail: ".", source: plural(new Set(b.inside.map((o) => pathOf(o.url))).size, "screen") + " behind the login" });
   }
   if (b.diff && b.diff.priceChanges.length && b.diffFrom) {
-    out.push({ id: "change", kind: "change", lead: `Changed since ${shortDate(b.diffFrom.createdAt)}:`, fact: b.diff.priceChanges[0].text, tail: b.diff.priceChanges.length > 1 ? ` and ${b.diff.priceChanges.length - 1} more price line${b.diff.priceChanges.length === 2 ? "" : "s"}.` : ".", source: `compared with the run of ${shortDate(b.diffFrom.createdAt)}` });
+    const c = b.diff.priceChanges[0];
+    const was = b.diff.removed.find((r) => r.url === c.url && shape(r.text) === shape(c.text));
+    const from = was && moneyIn(was.text), to = moneyIn(c.text);
+    const more = b.diff.priceChanges.length - 1;
+    out.push({ id: "change", kind: "change", lead: `Changed since ${shortDate(b.diffFrom.createdAt)}:`, fact: from && to ? `${from} → ${to}` : c.text, tail: `${from && to ? ` in “${c.text}”` : ""}${more > 0 ? `, and ${plural(more, "more price line")}` : ""}.`, source: `${pageName(c.url)} · compared with the run of ${shortDate(b.diffFrom.createdAt)}` });
   }
   const docs = b.hidden.filter((o) => o.kind === "document");
   if (docs.length) out.push({ id: "docs", kind: "document", lead: `Found ${docs.length} document${docs.length === 1 ? "" : "s"} behind clicks:`, fact: docs.slice(0, 3).map((o) => o.text.split("/").pop()).join(", "), tail: ".", source: pageName(docs[0].url) });
@@ -148,3 +152,7 @@ export function pricesCsv(b: BriefData): string {
   for (const r of b.prices) rows.push([b.competitor, pathOf(r.url), countryName(r.country) ?? "home", r.device, r.amount, r.currency, r.period, r.text, r.layer].map(csvCell).join(","));
   return rows.join("\n");
 }
+
+/** The same sentence with its amounts blanked, to pair an old price line with its new version. */
+const shape = (t: string) => t.replace(new RegExp(MONEY.source, "g"), "#");
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
