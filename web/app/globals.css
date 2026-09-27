@@ -2510,3 +2510,68 @@ td a {
   padding: 0 28px;
   letter-spacing: 0;
 }
+/* Gap: before/after comparison */
+.gap-section {
+  padding-bottom: 48px;
+}
+.gap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 32px;
+}
+@media (max-width: 700px) {
+  .gap-grid { grid-template-columns: 1fr; }
+}
+.gap-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.gap-card {
+  border: 1px solid var(--rule);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gap-card.highlight {
+  border-color: var(--accent);
+}
+.gap-card-head {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.gap-item {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.gap-item small {
+  color: var(--muted);
+  margin-left: 6px;
+  font-size: 11px;
+}
+.gap-item.dim {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--structure);
+}
+.gap-score {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+.gap-score span {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.gap-score.accent span {
+  color: var(--accent);
+}

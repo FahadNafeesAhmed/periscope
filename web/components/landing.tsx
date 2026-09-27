@@ -3,132 +3,12 @@ import { useState } from "react";
 import { Mark } from "./sections";
 import { LiveSection } from "./live-section";
 import { useTheme } from "./theme-provider";
-import config from "@/public/console.json";
 import benchmark from "@/public/benchmark/summary.json";
-import snapshot from "@/public/snapshot.json";
-
-const nodes = [
-  {
-    id: "target",
-    label: "Helix Ledger",
-    x: 360,
-    y: 190,
-    kind: "Page",
-    description:
-      "The controlled SaaS target connects public pricing with an authenticated dashboard.",
-  },
-  {
-    id: "pricing",
-    label: "Pricing",
-    x: 200,
-    y: 120,
-    kind: "Page",
-    description: "Billing and seat controls reveal different pricing facts.",
-  },
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    x: 530,
-    y: 135,
-    kind: "Page",
-    description: "Authorized access reveals the Team plan’s seat usage.",
-  },
-  {
-    id: "annual-action",
-    label: "Annual toggle",
-    x: 105,
-    y: 220,
-    kind: "Action",
-    description:
-      "Switching Monthly to Annual reveals a price with annual billing context.",
-  },
-  {
-    id: "volume-action",
-    label: "100+ seats",
-    x: 235,
-    y: 305,
-    kind: "Action",
-    description: "Selecting 100+ seats reveals the volume pricing condition.",
-  },
-  {
-    id: "login",
-    label: "Authorized session",
-    x: 525,
-    y: 290,
-    kind: "Action",
-    description:
-      "A signed-in session gives the walker access to the dashboard.",
-  },
-  {
-    id: "annual",
-    label: "CA$26 / user / month",
-    x: 100,
-    y: 350,
-    kind: "Fact",
-    description: snapshot.facts[0].quote,
-  },
-  {
-    id: "volume",
-    label: "From $39 / user / month",
-    x: 350,
-    y: 395,
-    kind: "Fact",
-    description: snapshot.facts[1].quote,
-  },
-  {
-    id: "seats",
-    label: "25 of 30 seats",
-    x: 635,
-    y: 375,
-    kind: "Fact",
-    description: snapshot.facts[2].quote,
-  },
-  {
-    id: "context",
-    label: "Billing + seat context",
-    x: 380,
-    y: 65,
-    kind: "Context",
-    description:
-      "Conditions travel with the facts: annual billing, minimum seats, and authenticated access.",
-  },
-];
-const links = [
-  ["target", "pricing"],
-  ["target", "dashboard"],
-  ["pricing", "annual-action"],
-  ["pricing", "volume-action"],
-  ["annual-action", "annual"],
-  ["volume-action", "volume"],
-  ["dashboard", "login"],
-  ["login", "seats"],
-  ["context", "pricing"],
-  ["context", "dashboard"],
-  ["context", "annual"],
-  ["context", "volume"],
-];
 
 export function Landing() {
   const { theme, toggle: toggleTheme } = useTheme();
-  const [jobId, setJobId] = useState("reveal");
-  const [nodeId, setNodeId] = useState("annual");
   const [metric, setMetric] = useState<"material" | "reported">("material");
-  const [recording, setRecording] = useState(false);
   const [connected, setConnected] = useState(false);
-  const job = config.jobs.find((j) => j.id === jobId)!;
-  const node = nodes.find((n) => n.id === nodeId)!;
-  const selectJob = (id: string) => {
-    setJobId(id);
-    setRecording(false);
-  };
-  const configuredUrl: unknown = job.playerUrl;
-  const playerUrl =
-    typeof configuredUrl === "string" &&
-    /^(https:\/\/([a-z0-9-]+\.)*steel\.dev\/|https:\/\/api\.steel\.dev\/)/.test(
-      configuredUrl,
-    )
-      ? configuredUrl
-      : null;
   return (
     <div className="hackathon">
       <a href="#main" className="skip-link">
@@ -177,233 +57,39 @@ export function Landing() {
         {!connected && (
           <section
             id="schematic"
-            className="console-section"
-            aria-label="Static schematic"
+            className="console-section gap-section"
+            aria-label="What Periscope finds"
           >
-            <div className="console-toolbar">
-              <span>Browser operations</span>
-              <span className="mode-label">
-                Offline preview · live browsers appear when a run starts
-              </span>
+            <div className="console-section-title">
+              <div>
+                <div className="eyebrow">The gap</div>
+                <h2 id="gap-title">What a scraper sees<br /><span className="muted">vs. what&apos;s actually there.</span></h2>
+              </div>
+              <p>Competitor pages hide pricing behind toggles, country redirects, and logins. Periscope opens real browsers that click, navigate, and sign in — then reports what it finds with evidence.</p>
             </div>
-            <div className="operations-grid">
-              <aside
-                className="telemetry"
-                aria-label="Selected agent telemetry"
-              >
-                <div className="panel-caption">Selected agent</div>
-                <h2>{job.name}</h2>
-                <p className="job-goal">{job.goal}</p>
-                <svg
-                  className="routing-map"
-                  viewBox="0 0 280 145"
-                  role="img"
-                  aria-label="Cloud browsers route to Canada, United States, and Germany proxies"
-                >
-                  <path
-                    d="M35 72H106 M106 30V116 M106 30H212 M106 72H212 M106 116H212"
-                    fill="none"
-                    stroke="var(--structure)"
-                  />
-                  <circle cx="35" cy="72" r="6" fill="var(--text)" />
-                  <text x="10" y="98">
-                    CLOUD
-                  </text>
-                  {["CA", "US", "DE"].map((c, i) => (
-                    <g key={c}>
-                      <circle
-                        cx="212"
-                        cy={30 + i * 43}
-                        r="5"
-                        fill={
-                          job.country === c
-                            ? "var(--accent)"
-                            : "var(--structure)"
-                        }
-                      />
-                      <text
-                        x="230"
-                        y={34 + i * 43}
-                        fill={
-                          job.country === c ? "var(--accent)" : "var(--muted)"
-                        }
-                      >
-                        {c}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
-                <dl className="telemetry-fields">
-                  <div>
-                    <dt>Proxy</dt>
-                    <dd>{job.proxy}</dd>
-                  </div>
-                  <div>
-                    <dt>Device</dt>
-                    <dd>{job.device}</dd>
-                  </div>
-                  <div>
-                    <dt>Access</dt>
-                    <dd>{job.auth}</dd>
-                  </div>
-                  <div>
-                    <dt>Session</dt>
-                    <dd>{playerUrl ? "Player linked" : "Not connected"}</dd>
-                  </div>
-                </dl>
-                <div className="panel-caption">Execution path</div>
-                <ol className="compact-trace">
-                  {job.steps.map((step, i) => (
-                    <li key={step}>
-                      <span className="mono">0{i + 1}</span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </aside>
-              <div className="browser-stage">
-                <div className="agent-tabs" aria-label="Choose agent">
-                  {config.jobs.map((j) => (
-                    <button
-                      key={j.id}
-                      type="button"
-                      aria-pressed={jobId === j.id}
-                      onClick={() => selectJob(j.id)}
-                    >
-                      {j.name}
-                      <span>
-                        {j.country.length === 2
-                          ? j.country
-                          : j.id === "walker"
-                            ? "AUTH"
-                            : "DOM"}
-                      </span>
-                    </button>
-                  ))}
+            <div className="gap-grid">
+              <div className="gap-col gap-before">
+                <div className="gap-label">What a scraper or ChatGPT sees</div>
+                <div className="gap-card">
+                  <div className="gap-card-head">Pricing page HTML</div>
+                  <div className="gap-item">&ldquo;Starting at $39/user/month&rdquo;</div>
+                  <div className="gap-item dim">Annual toggle? Not clicked.</div>
+                  <div className="gap-item dim">Volume pricing? Behind a dropdown.</div>
+                  <div className="gap-item dim">Other countries? Same US page.</div>
+                  <div className="gap-item dim">Dashboard? Behind a login wall.</div>
+                  <div className="gap-score"><span>22</span> / 65 facts recovered</div>
                 </div>
-                <div className="browser-chrome">
-                  <span className="window-dots" aria-hidden="true">
-                    ● ● ●
-                  </span>
-                  <span>{job.target}</span>
-                  <span>
-                    {recording
-                      ? "Demo capture"
-                      : playerUrl
-                        ? "Live player"
-                        : "Page state"}
-                  </span>
-                </div>
-                <div className="browser-viewport">
-                  {recording ? (
-                    <div className="archive-view">
-                      <img
-                        src="/live-view.png"
-                        alt="Periscope running eight browsers at once during a demo"
-                      />
-                      <p>Eight browsers during a demo run.</p>
-                    </div>
-                  ) : playerUrl ? (
-                    <iframe
-                      title={`${job.name} browser session`}
-                      src={playerUrl}
-                      allow="clipboard-read; clipboard-write"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="target-schematic">
-                      <div className="target-brand">
-                        HELIX LEDGER <span>demo target</span>
-                      </div>
-                      {job.id === "reveal" ? (
-                        <>
-                          <div className="schematic-label">
-                            Pricing · recovered page state
-                          </div>
-                          <h3>
-                            One toggle.
-                            <br />A different price.
-                          </h3>
-                          <div className="billing-state">
-                            <span>Monthly</span>
-                            <strong>Annual</strong>
-                          </div>
-                          <div className="recovered-value">
-                            CA$26<small>per user / month</small>
-                          </div>
-                          <p>Annual billing · reported example</p>
-                        </>
-                      ) : job.id === "walker" ? (
-                        <>
-                          <div className="schematic-label">
-                            Dashboard · signed in
-                          </div>
-                          <h3>Team plan</h3>
-                          <div className="seat-count">
-                            25 <span>/ 30 seats</span>
-                          </div>
-                          <div
-                            className="seat-grid"
-                            aria-label="25 of 30 seats used"
-                          >
-                            {Array.from({ length: 30 }, (_, i) => (
-                              <i key={i} className={i < 25 ? "used" : ""} />
-                            ))}
-                          </div>
-                          <p>Seat usage recovered behind the login.</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="schematic-label">
-                            Same page, seen from abroad
-                          </div>
-                          <div className="country-large">{job.country}</div>
-                          <h3>Same page. Different vantage.</h3>
-                          <p>
-                            {job.proxy}
-                            <br />
-                            {job.device}
-                          </p>
-                          <div className="regional-empty">
-                            Run the demo to see the price from here.
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="browser-status">
-                  <div>
-                    <span className="field-label">Objective</span>
-                    <p>{job.goal}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="archive-button"
-                    aria-pressed={recording}
-                    onClick={() => setRecording(!recording)}
-                  >
-                    {recording
-                      ? "Back to selected agent"
-                      : "See a demo capture"}{" "}
-                    ↗
-                  </button>
-                </div>
-                <div className="agent-strip">
-                  {config.jobs
-                    .filter((j) => ["reveal", "ca", "walker"].includes(j.id))
-                    .map((j) => (
-                      <button
-                        key={j.id}
-                        type="button"
-                        onClick={() => selectJob(j.id)}
-                        aria-pressed={jobId === j.id}
-                      >
-                        <span>{j.name}</span>
-                        <strong>{j.result}</strong>
-                        <small>{j.detail}</small>
-                      </button>
-                    ))}
+              </div>
+              <div className="gap-col gap-after">
+                <div className="gap-label">What Periscope finds</div>
+                <div className="gap-card highlight">
+                  <div className="gap-card-head">5 browsers, 3 countries, 1 sign-in</div>
+                  <div className="gap-item">CA$26/user/month <small>annual billing toggled</small></div>
+                  <div className="gap-item">From $39/user/month <small>100+ seat dropdown</small></div>
+                  <div className="gap-item">25 of 30 seats used <small>signed-in dashboard</small></div>
+                  <div className="gap-item">$29/mo in US, {"\u20AC"}31/mo in DE <small>country proxies</small></div>
+                  <div className="gap-item">Team plan, Pro plan <small>feature matrix extracted</small></div>
+                  <div className="gap-score accent"><span>63</span> / 65 facts recovered</div>
                 </div>
               </div>
             </div>
