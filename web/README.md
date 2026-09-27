@@ -1,6 +1,8 @@
-# Periscope · Depth Map
+# Periscope · The Brief (design variant B)
 
-A static Next.js App Router / TypeScript console with Sora and Roboto Mono from Google Fonts. The centre of the page is the live section, wired to the Periscope API the same way the Streamlit page was: every Steel browser the agents hold is embedded as a live player, a Steel usage trace names every feature as it is used (proxies by country, device emulation, saved logins, walls), walls get a card with an "I cleared it, resume" button, one story card explains each run, and the intelligence tabs (coverage, countries, prices, feature matrix) fill from the same run. Below it sit the evidence corpus and the controlled benchmark. Palette and layout tokens live in `app/globals.css`; the API client is `lib/api.ts` and the plain-language derivations are `lib/story.ts`.
+A static Next.js console that turns Periscope's browser runs into a competitive brief: the document a founder, advisor or investor takes into a pricing review, a board meeting or an IC memo. This is variant B of an A/B test against the v1 console on `main`; both run the same jobs through the same API.
+
+The page has three parts. The **hero** states the promise, takes a competitor's address (bare domains are fine), offers whole-site and country switches, shows the run plan, and uses the benchmark as proof. The **brief** leads with key findings in plain sentences, each with its source, then pricing by country, changes since the last run, facts behind clicks and behind the login, features and plans, evidence-backed answers (Ask), and how it was gathered; it copies as Markdown and exports prices as CSV. The **agent rail** beside it puts walls that need a person first, then one progress line per run, one live Steel browser at a time, a Stop button, and the raw browser log.
 
 ## Run locally
 
@@ -8,7 +10,7 @@ A static Next.js App Router / TypeScript console with Sora and Roboto Mono from 
 cd web && npm ci && npm run dev
 ```
 
-Open http://localhost:3000. Node.js 20.9 or newer is required. Start the API from the repository root with `STEEL_API_KEY=... npm run api` (port 4747); the console connects to that address by default. Without the API the page shows the static schematic instead of the live section's browsers.
+Open http://localhost:3000. Node.js 20.9 or newer is required. Start the API from the repository root with `STEEL_API_KEY=... npm run api` (port 4747); the console connects to that address by default. Without the API the page shows a sample brief (labelled as one) built from the team's reported Helix Ledger figures.
 
 Environment (all optional, read at build time):
 
@@ -33,58 +35,34 @@ npm run typecheck
 
 The production build produces `out/` using Next.js static export: https://nextjs.org/docs/app/guides/static-exports. There are no runtime server routes. Do not use `next start` for this export.
 
-## Deploy on Vercel
-
-From this project directory:
-
-```cmd
-npx vercel login
-npx vercel
-npx vercel --prod
-```
-
-Choose this directory (`./`) when prompted. Allow Vercel to detect Next.js and use `npm run build`. The first deployment is a preview; the final command deploys to production and prints the public URL. Alternatively import a GitHub repository in Vercel with `periscope-site` as the Root Directory if this folder is at its root. This standalone folder is currently separate from the existing `periscope-review` checkout; push it to the repository you intend to deploy before using Git import.
-
 ## Files
 
 ```text
 app/
-  globals.css            Design tokens, layouts, focus and responsive styles
-  icon.svg               Periscope mark
-  layout.tsx             Fonts and metadata
-  page.tsx               Header, depth navigation, six sections, footer
+  globals.css            Tokens (light and dark), layout, components, responsive rules
+  layout.tsx             Fonts (Geist), metadata, theme set before first paint
+  page.tsx               The console
+  benchmark/page.tsx     The benchmark, banded by where each planted fact lives
 components/
-  sections.tsx           Hero, problem, architecture, benchmark
-  explorer.tsx           Browser observations, trace, and recovered views
-public/
-  snapshot.json          Source of benchmark and recovered facts
-scripts/
-  source.mjs             Produce a readable complete source listing
-.gitignore
-next-env.d.ts
-next.config.ts
-package.json
-package-lock.json
-tsconfig.json
-README.md
+  console.tsx            Hero, workspace, "Why not just ask ChatGPT?", how it works
+  brief.tsx              The brief document
+  ask.tsx                Questions answered from observations (POST /runs/:id/research)
+  agents.tsx             Walls, run progress, live browser, log
+  site-chrome.tsx        Header with agent status, footer
+  icons.tsx, mark.tsx    Lucide icons used on actions; the Periscope mark
+  theme-provider.tsx     Light and dark themes
+lib/
+  api.ts                 API client, types, polling
+  run-controller.ts      Launching, following, resuming and stopping runs
+  brief.ts               Brief data, findings, Markdown and CSV export, run diff
+  story.ts               Plain-language run stories and the browser log
+  sample.ts              The offline sample brief and benchmark figures
 ```
 
-`npm run source` creates `SOURCE.md` with the file tree and every authored file's complete contents; the generated dependency lockfile is provided separately.
+## Honesty rules
 
-The first section presents labelled REVEAL, BORDERS, and WALKER browser instances. The controls are interactive and the center stage shows a reconstructed target state or the repository's original live-view screenshot. It deliberately labels missing session IDs, timings, prices, and proxy observations as unavailable. A real Steel player can be connected by replacing a job's `playerUrl` in `public/console.json` with a trusted Steel embed URL; URLs are allow-listed to `steel.dev` and the iframe is not faked.
-
-The second section is an SVG evidence graph connecting target pages, actions, facts, and context. The graph is a compact visual model of the SQLite/Qdrant knowledge layer, clearly labelled illustrative rather than an exported vector index. The third section loads the repository's published `benchmarks/` report, rubric, and manual ChatGPT result into a chart and expandable group table. It distinguishes Periscope's 63 facts in collected material from Opus's 58 reported facts, and keeps ChatGPT's separately hand-scored 38 visible.
-
-## Evidence and honest missing states
-
-The JSON contains only the supplied controlled benchmark and three reported examples. It is not an independently verified benchmark. The source repository's API fixtures are generated from seeded test data and are intentionally excluded.
-
-Browser observations are selectable; the chosen route and reconstructed trace update together. Data-view buttons switch between country pricing, page coverage, and the feature matrix. Evidence links select their corresponding observation. JSON download works without a server API. Method details are keyboard operable.
-
-Original event timestamps and session metadata were not supplied. Timestamp fields remain null and the UI explicitly renders unavailable values instead of inventing a run. The trace describes the reported observation path, not recorded machine events. Country is also unknown: CAD identifies currency, not proof of a Canadian proxy. Full per-page counts and additional regional prices remain unavailable. Authenticated access is reported for the seat example; a recorded human handoff is not claimed.
-
-To publish an actual timestamped session trace, replace the reconstructed paths with a sanitized real event export, preserving timestamps and session context. Do not put login credentials, tokens, or personal account data into public JSON. The live-run section can only become a genuine recorded-run showcase once those artifacts exist.
+Every finding is derived from API data and names where it was seen. The sample brief uses only the team's reported Helix Ledger figures and is labelled as a sample. Comparisons with other tools say what the benchmark supports: ChatGPT with browsing did slightly better than Periscope behind clicks (15 against 13); Periscope's lead is behind the login (28 of 28 against 1).
 
 ## Visual direction
 
-Midnight `#0C1522`: canvas. Deep navy `#142338`: depth bands. Frost `#E8F0F7`: primary type and primary action. Mist `#A3B4C7`: secondary type. Steel blue `#365775`: structure. Cyan `#76DCE8`: selected evidence paths and highlighted benchmark result. Neutral dividers and spacing define the page; no entrance animations or gradients. Mobile uses a narrow margin scale, stacked observations, and locally scrollable data tables. Focus rings, reduced-motion support, semantic landmarks, button pressed states, and accessible chart labels are included.
+Neutral ink on white (and near-black in dark mode), Geist for everything, with mono only for addresses and paths. Hierarchy comes from size, weight and grey levels rather than boxes: the brief is the only card. There is one accent with one meaning: a highlighter marks a fact that a plain fetch missed, and it is used only in the key findings and the comparison so it keeps that meaning. Amber and green mark state only (a wall that needs a person, an agent working, a line added). No gradients, glass, glows or entrance animations; motion is limited to 150 ms state transitions and a pulse on things that are live, and it is disabled under reduced motion.
