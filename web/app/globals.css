@@ -2310,6 +2310,22 @@ td a {
   color: var(--accent);
   font-weight: 600;
 }
+.story-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0.6;
+}
+.frame-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.frame-context {
+  color: var(--muted);
+  font-size: 10px;
+}
 .intel {
   margin-top: 1px;
   background: var(--console-panel);

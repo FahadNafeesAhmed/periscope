@@ -184,12 +184,11 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
             {shown.map((s) => (
               <figure key={s.sessionId} className="browser-frame">
                 <figcaption>
-                  <strong>{s.competitor ?? ""}</strong>
-                  <span className="tag">{s.purpose ?? "session"}</span>
-                  <span className="tag steel">{s.vantage.country ? `${countryName(s.vantage.country)} · proxy` : "home region"}</span>
-                  <span className="tag">{s.vantage.device}</span>
-                  {s.accountRef && <span className="tag ok">signed in</span>}
-                  {s.pendingWall && <span className="tag warn">wall: {s.pendingWall} · needs a human</span>}
+                  <div className="frame-primary">
+                    <strong>{s.competitor ?? ""}</strong>
+                    <span className="frame-context">{s.vantage.country ? countryName(s.vantage.country) : ""}{s.accountRef ? " · signed in" : ""}</span>
+                    {s.pendingWall && <span className="tag warn">needs human</span>}
+                  </div>
                   <small>{(s.currentUrl ?? "").slice(0, 80)}</small>
                 </figcaption>
                 <iframe title={`Browser session ${s.sessionId}`} src={s.playerUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
@@ -238,8 +237,13 @@ function StoryCard({ runId }: { runId: string }) {
   if (!story) return null;
   return (
     <div className="story">
-      <div className="story-head"><span className="tag">{story.kind}</span> <strong>{story.competitor}</strong> {story.badges.map((b) => <span key={b} className="tag steel">{b}</span>)} <span className="muted">{story.status}</span></div>
+      <div className="story-head">
+        <span className="tag">{story.kind}</span>
+        <strong>{story.competitor}</strong>
+        <span className="muted">{story.status}</span>
+      </div>
       {story.lines.map((l, i) => <p key={i} className={`story-line ${l.tone}`} dangerouslySetInnerHTML={{ __html: l.html }} />)}
+      {story.badges.length > 0 && <div className="story-badges">{story.badges.map((b) => <span key={b} className="tag steel">{b}</span>)}</div>}
     </div>
   );
 }
