@@ -103,13 +103,13 @@ function WhyNotChatGPT() {
     <section className="why" aria-labelledby="why-title">
       <div className="section-inner">
         <h2 id="why-title">Why not just ask ChatGPT?</h2>
-        <p className="section-lede">Chatbots and scrapers read the page a server sends. Pricing pages keep the interesting parts behind toggles, dropdowns, country redirects and logins, so none of it reaches the model.</p>
+        <p className="section-lede">Scrapers and reader APIs only see the page a server sends. Chatbot browsing gets further and opens some toggles, but in our test it stopped at the login, it sees one country, and its answer doesn&apos;t say which click a number came from.</p>
         <div className="compare">
           <div>
-            <h3>What a scraper or chatbot reads</h3>
+            <h3>What a plain fetch reads</h3>
             <p className="compare-quote">“Starting at $39/user/month”</p>
             <ul className="compare-list missing">{missing.map(([k, v]) => <li key={k}><strong>{k}</strong>{v}</li>)}</ul>
-            <p className="compare-score"><b>22</b> of 65 facts with a plain fetch · <b>38</b> for ChatGPT with browsing, which stopped at the login</p>
+            <p className="compare-score"><b>22</b> of 65 facts with a plain fetch. ChatGPT with browsing reached <b>38</b>, then stopped at the login.</p>
           </div>
           <div>
             <h3>What Periscope brings back</h3>
@@ -127,7 +127,7 @@ function HowItWorks() {
   const steps = [
     ["Reads the page like a person", "A real Chrome browser on Steel clicks every toggle, tab, dropdown and accordion, and records which action revealed each line."],
     ["Looks from other countries", "If the page hints at regional pricing, such as a currency, a tax note or a country picker, the same page opens through proxies in Canada, the US and Germany."],
-    ["Signs in without seeing the password", "Credentials live in Steel's vault and are typed by the browser, never shown to the model. If a CAPTCHA appears, the browser pauses until a person clears it."],
+    ["Signs in without seeing the password", "Credentials live in Steel's vault and are typed by the browser, never shown to the model. If a CAPTCHA beats Steel's solver, the browser pauses until a person clears it in the live view."],
     ["Writes the brief", "Claude turns what the browsers saw into findings. Every row keeps the page, country and click it came from, so you can defend it in the meeting."],
   ];
   return (

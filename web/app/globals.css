@@ -381,6 +381,29 @@ mark {
 .steps h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
 .steps p { margin-top: 8px; font-size: 14px; color: var(--text-2); }
 
+/* ---------- benchmark page ---------- */
+.bench h1 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.06; letter-spacing: -0.035em; font-weight: 600; max-width: 20ch; }
+.bench h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-2); }
+.bench-top { margin-top: 48px; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: clamp(32px, 6vw, 80px); align-items: start; }
+.segmented { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--bg-band); margin-bottom: 24px; }
+.segmented button { height: 30px; padding: 0 12px; border-radius: 7px; font-size: 13px; color: var(--text-2); transition: background-color 150ms, color 150ms; }
+.segmented button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.bars-large { gap: 18px; }
+.bars-large li { font-size: 15px; }
+.bars-large .bar-track { height: 8px; }
+.bench-notes { display: grid; gap: 12px; font-size: 14px; color: var(--text-2); }
+.bench-notes b { color: var(--text); font-weight: 500; }
+.bench-h2 { margin: 64px 0 16px; }
+.bench-table { font-size: 14px; }
+.bench-table th, .bench-table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); text-align: left; font-weight: 400; }
+.bench-table thead th { font-size: 13px; color: var(--text-3); font-weight: 500; white-space: nowrap; }
+.bench-table .num { text-align: right; font-variant-numeric: tabular-nums; padding-left: 16px; }
+.bench-table .ours { font-weight: 600; }
+.bench-table .zero { color: var(--text-3); }
+.bench-table .band th, .bench-table .band td { padding-top: 24px; font-weight: 600; color: var(--text); border-bottom-color: var(--rule-strong); }
+.bench-method { margin-top: 48px; max-width: 72ch; display: grid; gap: 12px; font-size: 14px; color: var(--text-2); }
+.bench-links { display: flex; flex-wrap: wrap; gap: 20px; color: var(--text); }
+
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
   .workspace-inner { grid-template-columns: 1fr; }
@@ -388,7 +411,7 @@ mark {
   .steps { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 860px) {
-  .hero-inner { grid-template-columns: 1fr; align-items: start; }
+  .hero-inner, .bench-top { grid-template-columns: 1fr; align-items: start; }
   .site-header nav { display: none; }
   .compare { grid-template-columns: 1fr; }
   .compare > div { padding-right: 0; }
