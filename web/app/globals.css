@@ -245,8 +245,8 @@ mark {
 .brief-loading h2 { margin-top: 14px; }
 .brief-loading p { margin-top: 8px; color: var(--text-2); max-width: 52ch; }
 .brief-head { padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
-.brief-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13px; color: var(--text-2); }
-.pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: var(--bg-band); font-size: 12px; font-weight: 500; color: var(--text-2); }
+.brief-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; font-size: 13px; color: var(--text-2); }
+.pill { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: var(--bg-band); font-size: 12px; font-weight: 500; color: var(--text-2); }
 .pill.live i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: pulse 1.6s ease-in-out infinite; }
 .brief-origin { font-family: var(--mono); font-size: 12px; }
 .brief-origin:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
@@ -428,8 +428,10 @@ mark {
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
-  .workspace-inner { grid-template-columns: 1fr; }
+  .workspace-inner { grid-template-columns: minmax(0, 1fr); }
   .rail { position: static; }
+  /* a wall needs a person now; don't leave it below a long brief */
+  .workspace-inner:has(.rail > .wall) > .rail { order: -1; }
   .steps { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 860px) {
@@ -451,6 +453,7 @@ mark {
   .price-where, .how { text-align: left; }
   .finding p { font-size: 16px; }
   .steps { grid-template-columns: 1fr; }
+  .brief-actions .ghost { margin-left: 0; }
   .site-footer-inner { flex-direction: column; }
   .agent-status { font-size: 0; gap: 0; }
 }
