@@ -3,7 +3,7 @@
 // button; one story per run; and the intelligence beneath. Other countries open only when the page gives a reason.
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, siteMap, TARGET_URL, usePoll,
+  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, siteMap, usePoll,
   type BordersGrid, type BordersPlan, type CoveragePage, type Handoff, type LiveSession, type MatrixRow, type PriceRow, type RunSummary, type RunView, type StoredEvent,
 } from "@/lib/api";
 import { newTraceState, storyFor, storyOrder, updateTrace, type Story, type TraceState } from "@/lib/story";
@@ -23,7 +23,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
   const handoffs = usePoll(() => apiGet<{ handoffs: Handoff[] }>("/handoffs").then((r) => r?.handoffs ?? null), 2000);
   const runs = usePoll(() => apiGet<{ runs: RunSummary[] }>("/runs?limit=30").then((r) => r?.runs ?? null), 4000);
 
-  const [target, setTarget] = useState(TARGET_URL);
+  const [target, setTarget] = useState("");
   const [compare, setCompare] = useState(false);
   const [wholeSite, setWholeSite] = useState(false);
   const [mapRun, setMapRun] = useState<string | null>(null);
