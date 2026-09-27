@@ -2872,3 +2872,5 @@ tr:hover .row-copy {
     grid-template-columns: 1fr;
   }
 }
+/* login door */
+.login-form{display:flex;flex-direction:column;gap:8px;margin:10px 0}.login-form input{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:6px;background:var(--bg-2, rgba(255,255,255,.04));color:inherit;font:13px var(--font-sans, inherit)}.login-form .primary-action{align-self:flex-start}.wall-card .ok{color:var(--accent)}.link-button{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline}

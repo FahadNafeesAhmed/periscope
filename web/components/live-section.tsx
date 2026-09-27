@@ -269,11 +269,12 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
 
         <aside className="live-side">
           {(handoffs ?? []).map((h) => (
+            h.wall === "login" ? <LoginCard key={h.jobId} h={h} onResume={() => resume(h)} onNote={setNote} /> : (
             <div key={h.jobId} className="wall-card">
               <div className="wall-label">{h.wall.toUpperCase()} wall · <span className="mono">{h.jobId.slice(0, 8)}</span></div>
-              <p>{h.wall === "login" ? "Sign in yourself inside the live browser. Periscope never sees your password. Then press resume and it reads every screen behind the login." : "Clear it in the live frame, then resume."} <a href={h.viewerUrl} target="_blank" rel="noreferrer">Open live view</a></p>
-              <button type="button" className="secondary-action" onClick={() => resume(h)}>{h.wall === "login" ? "I'm signed in, resume" : "I cleared it, resume"}</button>
-            </div>
+              <p>Clear it in the live frame, then resume. <a href={h.viewerUrl} target="_blank" rel="noreferrer">Open live view</a></p>
+              <button type="button" className="secondary-action" onClick={() => resume(h)}>I cleared it, resume</button>
+            </div>)
           ))}
           <div className="panel-caption">What the agents are doing</div>
           {followedRuns.length === 0 && <p className="muted">Start a run to follow it here.</p>}
@@ -289,6 +290,42 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
       </div>
       </details>
     </section>
+  );
+}
+
+/**
+ * The login door. The person types their own login for the site; it goes over HTTPS to the brain, into Steel's vault
+ * bound to that sign-in page, and a fresh browser has Steel inject it. The password is never shown to the model and
+ * never kept by Periscope. Or the person signs in inside the live browser and presses resume.
+ */
+function LoginCard({ h, onResume, onNote }: { h: Handoff; onResume: () => void; onNote: (n: string) => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+  async function send(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!username.trim() || !password) return;
+    setState("sending"); setError("");
+    const { body, status } = await apiPost<{ ok: boolean; reason?: string; note?: string }>(`/handoffs/${h.jobId}/login`, { username: username.trim(), password });
+    setPassword("");
+    if (body?.ok) { setState("sent"); onNote(body.note ?? "Signing in with Steel's vault; the walk continues behind the login."); }
+    else { setState("error"); setError(body?.reason ?? `HTTP ${status}`); }
+  }
+  return (
+    <div className="wall-card">
+      <div className="wall-label">LOGIN wall · <span className="mono">{h.jobId.slice(0, 8)}</span></div>
+      <p>This site needs a login. Enter <b>your own</b> account for it. Periscope stores it in Steel&apos;s vault for this sign-in page only, a fresh browser signs in, and the walk continues behind the login. The password never reaches the model.</p>
+      {state === "sent" ? <p className="ok">Sent. A new browser is signing in now.</p> : (
+        <form onSubmit={send} className="login-form" autoComplete="off">
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Email or username" autoComplete="off" />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" autoComplete="new-password" />
+          <button type="submit" className="primary-action" disabled={state === "sending" || !username.trim() || !password}>{state === "sending" ? "Storing in vault…" : "Sign in and continue"}</button>
+          {state === "error" && <p className="muted">Could not sign in: {error}</p>}
+        </form>
+      )}
+      <p className="muted">Or sign in yourself: <a href={h.viewerUrl} target="_blank" rel="noreferrer">open the live browser</a>, log in there, then <button type="button" className="link-button" onClick={onResume}>resume</button>.</p>
+    </div>
   );
 }
 
