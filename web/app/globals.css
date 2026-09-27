@@ -2575,3 +2575,69 @@ td a {
 .gap-score.accent span {
   color: var(--accent);
 }
+/* Focus/Grid view toggle */
+.view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.view-toggle button {
+  background: transparent;
+  padding: 5px 14px;
+  font-size: 12px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+}
+.view-toggle button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--canvas);
+  border-color: var(--accent);
+}
+.view-toggle span {
+  margin-left: 12px;
+  font-size: 12px;
+}
+/* Focus view: one large browser */
+.focus-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.browser-frame-focus {
+  min-height: 420px;
+}
+.browser-frame-focus iframe {
+  min-height: 380px;
+}
+.focus-selector {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.focus-thumb {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  font-size: 11px;
+  text-align: left;
+  min-width: 100px;
+  cursor: pointer;
+}
+.focus-thumb strong {
+  font-weight: 500;
+  font-size: 12px;
+}
+.focus-thumb span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.focus-thumb.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}

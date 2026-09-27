@@ -31,6 +31,8 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [viewMode, setViewMode] = useState<"focus" | "grid">("focus");
+  const [focusedIdx, setFocusedIdx] = useState(0);
 
   // Default to the latest Helix runs so the page is never empty.
   const followedRuns = useMemo(() => {
@@ -179,24 +181,62 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
 
       <div className="live-layout">
         <div className="browser-wall">
-          {live.length === 0 && <div className="empty-state">No browser is open right now. Press Run the demo and they appear within seconds.</div>}
-          <div className="browser-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-            {shown.map((s) => (
-              <figure key={s.sessionId} className="browser-frame">
-                <figcaption>
-                  <div className="frame-primary">
-                    <strong>{s.competitor ?? ""}</strong>
-                    <span className="frame-context">{s.vantage.country ? countryName(s.vantage.country) : ""}{s.accountRef ? " · signed in" : ""}</span>
-                    {s.pendingWall && <span className="tag warn">needs human</span>}
+          {live.length === 0 && <div className="empty-state">No browsers open yet. Enter a URL and press Analyze.</div>}
+          {live.length > 0 && (
+            <div className="view-toggle">
+              <button type="button" aria-pressed={viewMode === "focus"} onClick={() => setViewMode("focus")}>Focus</button>
+              <button type="button" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}>Grid</button>
+              {viewMode === "focus" && live.length > 1 && <span className="muted">{Math.min(focusedIdx + 1, live.length)} of {live.length}</span>}
+            </div>
+          )}
+          {viewMode === "focus" && live.length > 0 ? (() => {
+            const idx = Math.min(focusedIdx, live.length - 1);
+            const s = live[idx];
+            return (
+              <div className="focus-view">
+                <figure className="browser-frame browser-frame-focus">
+                  <figcaption>
+                    <div className="frame-primary">
+                      <strong>{s.competitor ?? ""}</strong>
+                      <span className="frame-context">{s.vantage.country ? countryName(s.vantage.country) : ""}{s.accountRef ? " · signed in" : ""}</span>
+                      {s.pendingWall && <span className="tag warn">needs human</span>}
+                    </div>
+                    <small>{(s.currentUrl ?? "").slice(0, 100)}</small>
+                  </figcaption>
+                  <iframe title={`Browser session ${s.sessionId}`} src={s.playerUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
+                  <div className="frame-foot"><span className="mono">{s.sessionId.slice(0, 8)}</span> · <a href={s.viewerUrl} target="_blank" rel="noreferrer">open live view</a></div>
+                </figure>
+                {live.length > 1 && (
+                  <div className="focus-selector">
+                    {live.map((sess, i) => (
+                      <button key={sess.sessionId} type="button" className={`focus-thumb${i === idx ? " active" : ""}`} onClick={() => setFocusedIdx(i)}>
+                        <strong>{sess.competitor ?? "Browser"}</strong>
+                        <span>{sess.vantage.country ? countryName(sess.vantage.country) : sess.purpose ?? "session"}</span>
+                      </button>
+                    ))}
                   </div>
-                  <small>{(s.currentUrl ?? "").slice(0, 80)}</small>
-                </figcaption>
-                <iframe title={`Browser session ${s.sessionId}`} src={s.playerUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
-                <div className="frame-foot"><span className="mono">{s.sessionId.slice(0, 8)}</span> · <a href={s.viewerUrl} target="_blank" rel="noreferrer">open live view</a></div>
-              </figure>
-            ))}
-          </div>
-          {live.length > PREVIEW_FRAMES && (
+                )}
+              </div>
+            );
+          })() : viewMode === "grid" ? (
+            <div className="browser-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+              {shown.map((s) => (
+                <figure key={s.sessionId} className="browser-frame">
+                  <figcaption>
+                    <div className="frame-primary">
+                      <strong>{s.competitor ?? ""}</strong>
+                      <span className="frame-context">{s.vantage.country ? countryName(s.vantage.country) : ""}{s.accountRef ? " · signed in" : ""}</span>
+                      {s.pendingWall && <span className="tag warn">needs human</span>}
+                    </div>
+                    <small>{(s.currentUrl ?? "").slice(0, 80)}</small>
+                  </figcaption>
+                  <iframe title={`Browser session ${s.sessionId}`} src={s.playerUrl} allow="clipboard-read; clipboard-write" referrerPolicy="no-referrer" />
+                  <div className="frame-foot"><span className="mono">{s.sessionId.slice(0, 8)}</span> · <a href={s.viewerUrl} target="_blank" rel="noreferrer">open live view</a></div>
+                </figure>
+              ))}
+            </div>
+          ) : null}
+          {viewMode === "grid" && live.length > PREVIEW_FRAMES && (
             <button type="button" className="secondary-action show-all" onClick={() => setShowAll((v) => !v)}>
               {showAll ? `Show fewer (first ${PREVIEW_FRAMES})` : `Show all ${live.length} browsers (${hidden} more)`}
             </button>
