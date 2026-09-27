@@ -2119,6 +2119,32 @@ td a {
   opacity: 0.45;
   cursor: default;
 }
+.primary-action.analyzing {
+  position: relative;
+  overflow: hidden;
+  opacity: 1;
+  animation: pulse-bg 1.5s ease-in-out infinite;
+}
+.primary-action.analyzing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes pulse-bg {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
 .chips {
   display: flex;
   flex-wrap: wrap;
