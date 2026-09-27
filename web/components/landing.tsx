@@ -4,6 +4,8 @@ import { Mark } from "./sections";
 import { LiveSection } from "./live-section";
 import { useTheme } from "./theme-provider";
 
+const githubLink = "https://github.com/FahadNafeesAhmed/periscope"
+
 export function Landing() {
   const { theme, toggle: toggleTheme } = useTheme();
   const [connected, setConnected] = useState(false);
@@ -52,7 +54,7 @@ export function Landing() {
                 <div className="eyebrow">The gap</div>
                 <h2 id="gap-title">What a scraper sees<br /><span className="muted">vs. what&apos;s actually there.</span></h2>
               </div>
-              <p>Competitor pages hide pricing behind toggles, country redirects, and logins. Periscope opens real browsers that click, navigate, and sign in — then reports what it finds with evidence.</p>
+              <p>Competitor pages hide pricing behind toggles, country redirects, and logins. Periscope opens real browsers that click, navigate, and sign in. Then reports what it finds with evidence.</p>
             </div>
             <div className="gap-grid">
               <div className="gap-col gap-before">
@@ -91,7 +93,7 @@ export function Landing() {
           Periscope · browser agents that read what the web hides · powered by
           Steel cloud browsers
         </span>
-        <a href="https://github.com/FahadNafeesAhmed/periscope">
+        <a href={githubLink}>
           Code, evidence, and the experiment ↗
         </a>
       </footer>

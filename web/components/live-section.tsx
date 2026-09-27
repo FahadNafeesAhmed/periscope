@@ -159,7 +159,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
             <div>
               <h2 id="live-title">Competitive intelligence,<br /><span className="muted">with evidence.</span></h2>
             </div>
-            <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries — then extracts every price, feature, and plan it finds.</p>
+            <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries, then extracts every price, feature, and plan it finds.</p>
           </div>
 
       <div className="launcher launcher-flush">
@@ -169,7 +169,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
             <button type="button" className="primary-action" disabled={disabled || busy} onClick={run}>{busy ? "Running…" : "Analyze"}</button>
           </div>
           <label className="check-row"><input type="checkbox" checked={wholeSite} onChange={(e) => setWholeSite(e.target.checked)} /> Scan entire site<span className="check-hint">Maps every page, then opens the top 50 in parallel</span></label>
-          <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare pricing across countries<span className="check-hint">Opens the same page from {DEMO_COUNTRIES.map((c) => countryName(c)).join(", ")}</span></label>
+          <label className="check-row"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare pricing across countries<span className="check-hint">Opens the same page from {DEMO_COUNTRIES.map((c) => countryName(c)).join(", ")}, etc.</span></label>
           {!disabled && !busy && target.trim().length > 10 && (
             <div className="run-plan">
               <span>Plan:</span> Open {wholeSite ? "up to 50 pages" : "this page"} in {compare ? `${DEMO_COUNTRIES.length + 1} browsers (home + ${DEMO_COUNTRIES.join(", ")})` : isDemoSite(target) ? "3 browsers (read, sign in, then countries if needed)" : "1 browser"}{wholeSite ? ", map the site first" : ""}. Takes ~{wholeSite ? "2–3 min" : "45 sec"}. The target sees normal browser traffic.
