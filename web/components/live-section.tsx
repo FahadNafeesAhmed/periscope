@@ -3,7 +3,7 @@
 // button; one story per run; and the intelligence beneath. Other countries open only when the page gives a reason.
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  apiGet, apiPost, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, siteMap, TARGET_URL, usePoll,
+  apiGet, apiPost, briefToMarkdown, countryName, DEMO_COUNTRIES, launchBorders, launchCustomRun, launchHelixDemo, launchSiteRun, observedTexts, regionSignals, requestBrief, siteMap, TARGET_URL, usePoll, type BriefView,
   type BordersGrid, type BordersPlan, type CoveragePage, type Handoff, type LiveSession, type MatrixRow, type PriceRow, type RunSummary, type RunView, type StoredEvent,
 } from "@/lib/api";
 import { newTraceState, storyFor, storyOrder, updateTrace, type Story, type TraceState } from "@/lib/story";
@@ -314,7 +314,19 @@ function Intelligence({ runIds }: { runIds: string[] }) {
   const [tab, setTab] = useState<"coverage" | "countries" | "prices" | "matrix">("coverage");
   const [copyMsg, setCopyMsg] = useState("");
   const [briefOpen, setBriefOpen] = useState(false);
+  const [modelBrief, setModelBrief] = useState<BriefView | null>(null);
+  const [briefState, setBriefState] = useState<"idle" | "building" | "error">("idle");
+  const [briefError, setBriefError] = useState("");
+  const health = usePoll(() => apiGet<{ model: boolean }>("/health"), 15000);
   const key = runIds.join(",");
+  // Ask Claude for the brief of the main run (the parse or site run; countries and login runs feed the same competitor).
+  async function buildModelBrief(rebuild = false) {
+    const main = [...runIds].sort((a, b) => storyOrder(a) - storyOrder(b))[0];
+    if (!main) return;
+    setBriefState("building"); setBriefError("");
+    const r = await requestBrief(main, rebuild);
+    if (r.brief) { setModelBrief(r.brief); setBriefState("idle"); } else { setBriefError(r.error ?? "failed"); setBriefState("error"); }
+  }
   const data = usePoll(async () => {
     const out = { coverage: [] as CoveragePage[], grids: [] as BordersGrid[], prices: [] as PriceRow[], matrix: [] as MatrixRow[], note: "" };
     for (const id of runIds) {
@@ -394,16 +406,21 @@ function Intelligence({ runIds }: { runIds: string[] }) {
         <div className="panel-caption">What Periscope learned</div>
         {anyData && <div className="intel-actions">
           <button type="button" className="copy-btn" onClick={copyTable}>{copyMsg || "Copy table"}</button>
-          <button type="button" className="brief-btn" onClick={() => setBriefOpen(!briefOpen)}>{briefOpen ? "Hide brief" : "Generate brief"}</button>
+          <button type="button" className="brief-btn" onClick={() => { setBriefOpen(!briefOpen); if (!briefOpen && health?.model && !modelBrief) void buildModelBrief(); }}>{briefOpen ? "Hide brief" : health?.model ? "Generate brief with Claude" : "Generate brief"}</button>
         </div>}
       </div>
       {briefOpen && anyData && (() => {
-        const brief = generateBrief();
+        const competitor = [...new Set(data?.coverage.map((p) => p.url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]) ?? [])].join(", ");
+        const brief = modelBrief ? briefToMarkdown(modelBrief, competitor) : generateBrief();
         return (
           <div className="brief-panel">
             <div className="brief-actions">
               <button type="button" className="copy-btn" onClick={() => copyText(brief, setCopyMsg)}>{copyMsg || "Copy brief"}</button>
+              {health?.model && <button type="button" className="copy-btn" disabled={briefState === "building"} onClick={() => void buildModelBrief(Boolean(modelBrief))}>{briefState === "building" ? "Claude is reading the evidence…" : modelBrief ? "Rebuild with Claude" : "Ask Claude"}</button>}
             </div>
+            {briefState === "building" && <p className="muted">Claude is reading every observation and the screenshots of the pages that hid the most. Usually 20 to 60 seconds.</p>}
+            {briefState === "error" && <p className="muted">Brief failed: {briefError}</p>}
+            {!health?.model && <p className="muted">This is the plain summary. Add ANTHROPIC_API_KEY to the brain&apos;s .env to get the Claude-written brief.</p>}
             <pre className="brief-content">{brief}</pre>
           </div>
         );

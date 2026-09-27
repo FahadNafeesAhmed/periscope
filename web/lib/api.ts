@@ -108,6 +108,42 @@ export async function launchSiteRun(url: string, opts: { maxPages?: number; askL
   return r.runId ? { ...r, borders: { competitor, url: u.origin, pages: [u.pathname || "/"], runId: `site-borders-${stamp}`, category: "demo" } } : r;
 }
 
+/** The Claude-written brief for a run: structured, every claim carrying observation ids. */
+export type BriefCited = { evidenceIds: string[] };
+export type BriefView = {
+  headline: string; summary: string[];
+  pricing: Array<BriefCited & { plan: string; price: string; period: string | null; currency: string | null; country: string | null; note: string | null }>;
+  hidden_findings: Array<BriefCited & { finding: string; revealed_by: string; why_it_matters: string; page: string }>;
+  country_differences: Array<BriefCited & { item: string; by_country: Array<{ country: string; value: string }> }>;
+  limits_and_features: Array<BriefCited & { feature: string; value: string }>;
+  signed_in_findings: Array<BriefCited & { finding: string; screen: string }>;
+  documents: Array<{ title: string; url: string }>;
+  what_a_fetch_tool_misses: Array<BriefCited & { text: string; because: string }>;
+  gaps: string[]; confidence: "high" | "medium" | "low"; model: string; generatedAt: string; observationsRead: number; screenshotsRead: number;
+};
+export async function requestBrief(runId: string, rebuild = false): Promise<{ brief?: BriefView; error?: string }> {
+  const { status, body } = await apiPost<{ ok: boolean; brief?: BriefView; reason?: string }>(`/runs/${runId}/brief`, rebuild ? { rebuild: true } : {});
+  if (body?.ok && body.brief) return { brief: body.brief };
+  return { error: body?.reason ?? (status === 503 ? "The model is off: add ANTHROPIC_API_KEY to .env and restart." : `HTTP ${status}`) };
+}
+
+/** Render the brief as Markdown for copy and download. */
+export function briefToMarkdown(b: BriefView, competitor: string): string {
+  const cite = (ids: string[]) => (ids.length ? ` _(${ids.length} evidence)_` : "");
+  const out: string[] = [`# ${b.headline}`, `Competitor: ${competitor} · confidence: ${b.confidence} · ${b.observationsRead} observations and ${b.screenshotsRead} screenshots read · ${new Date(b.generatedAt).toLocaleString()}`, ""];
+  out.push("## Summary", ...b.summary.map((l) => `- ${l}`), "");
+  if (b.pricing.length) out.push("## Pricing", ...b.pricing.map((p) => `- **${p.plan}**: ${p.price}${p.currency ? ` ${p.currency}` : ""}${p.period ? ` / ${p.period}` : ""}${p.country ? ` (${p.country})` : ""}${p.note ? ` — ${p.note}` : ""}${cite(p.evidenceIds)}`), "");
+  if (b.hidden_findings.length) out.push("## What only a click reveals", ...b.hidden_findings.map((h) => `- **${h.finding}** — revealed by ${h.revealed_by} on ${h.page}. ${h.why_it_matters}${cite(h.evidenceIds)}`), "");
+  if (b.country_differences.length) out.push("## Differences by country", ...b.country_differences.map((c) => `- **${c.item}**: ${c.by_country.map((x) => `${x.country} ${x.value}`).join(" · ")}${cite(c.evidenceIds)}`), "");
+  if (b.limits_and_features.length) out.push("## Limits and features", ...b.limits_and_features.map((f) => `- **${f.feature}**: ${f.value}${cite(f.evidenceIds)}`), "");
+  if (b.signed_in_findings.length) out.push("## Behind the login", ...b.signed_in_findings.map((f) => `- **${f.finding}** (${f.screen})${cite(f.evidenceIds)}`), "");
+  if (b.what_a_fetch_tool_misses.length) out.push("## What a fetch tool or a browsing AI never sees here", ...b.what_a_fetch_tool_misses.map((m) => `- "${m.text}" — ${m.because}${cite(m.evidenceIds)}`), "");
+  if (b.documents.length) out.push("## Documents", ...b.documents.map((d) => `- [${d.title}](${d.url})`), "");
+  if (b.gaps.length) out.push("## Gaps", ...b.gaps.map((g) => `- ${g}`), "");
+  out.push(`---`, `*Written by ${b.model || "Claude"} from Periscope's evidence. Every line above cites the browser observations behind it.*`);
+  return out.join("\n");
+}
+
 export type SiteMapView = { ready: boolean; nodes: number; edges: number; fetched: number; sitemap: boolean; pages: string[]; documents: string[] };
 export const siteMap = (runId: string) => apiGet<SiteMapView>(`/runs/${runId}/map`);
 
