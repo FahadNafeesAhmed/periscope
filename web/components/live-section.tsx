@@ -152,12 +152,15 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
 
   return (
     <section id="live" className="console-section live-section" aria-labelledby="live-title">
-      <div className="console-section-title">
-        <div>
-          <h2 id="live-title">Competitive intelligence,<br /><span className="muted">with evidence.</span></h2>
-        </div>
-        <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries — then extracts every price, feature, and plan it finds.</p>
-      </div>
+      <div className="hero-row">
+        <img src="/periscope_marketing_banner.svg" alt="Periscope" className="hero-banner" />
+        <div className="hero-main">
+          <div className="console-section-title">
+            <div>
+              <h2 id="live-title">Competitive intelligence,<br /><span className="muted">with evidence.</span></h2>
+            </div>
+            <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries — then extracts every price, feature, and plan it finds.</p>
+          </div>
 
       <div className="launcher launcher-flush">
         <div className="launcher-row">
@@ -173,6 +176,8 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
             </div>
           )}
           <p aria-live="polite">{status}</p>
+        </div>
+      </div>
         </div>
       </div>
 

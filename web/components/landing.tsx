@@ -38,18 +38,7 @@ export function Landing() {
           className="console-section intro-section"
           aria-labelledby="agents-title"
         >
-          {/* <div className="console-intro">
-            <div>
-              <h1 id="agents-title">
-                Know what your competitors hide.
-                <br />
-                <span>Before they know you&apos;re looking.</span>
-              </h1>
-            </div>
-            <p>
-              Real prices. Every country. Past the login. Watch it happen live.
-            </p>
-          </div> */}
+          {/* intro placeholder */}
         </section>
         <LiveSection onConnection={setConnected} />
         {!connected && (

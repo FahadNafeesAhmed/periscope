@@ -2327,7 +2327,7 @@ td a {
   font-size: 10px;
 }
 .intel {
-  margin-top: 1px;
+  margin-top: 24px;
   background: var(--console-panel);
   padding: 22px 20px;
 }
@@ -2760,6 +2760,29 @@ tr:hover .row-copy {
   margin: 0;
 }
 /* Benchmark link bar */
+/* Hero row: banner + title/launcher side by side */
+.hero-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+}
+.hero-banner {
+  max-width: 300px;
+  height: auto;
+  display: block;
+  flex-shrink: 0;
+  border-radius: 30px;
+}
+.hero-main {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 800px) {
+  .hero-row {
+    flex-direction: column;
+    gap: 24px;
+  }
+}
 .benchmark-link-bar {
   text-align: center;
   padding: 24px var(--gutter);
