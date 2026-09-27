@@ -42,7 +42,7 @@ export default function SharePage() {
               <div className="eyebrow">Share Periscope</div>
               <h2 id="share-title">Shareable assets.</h2>
             </div>
-            <p>Download and share these assets to help others discover what the web hides.</p>
+            <p>Download and share these assets to help others discover Periscope!</p>
           </div>
 
           <div className="share-grid">
