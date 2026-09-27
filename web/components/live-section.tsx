@@ -160,6 +160,7 @@ export function LiveSection({ onConnection }: { onConnection?: (connected: boole
               <h2 id="live-title">Super web intelligence,<br /><span className="muted">with evidence.</span></h2>
             </div>
             <p>Enter a competitor&apos;s URL. Periscope opens real browsers that click, sign in, and view the page from different countries, then extracts every price, feature, and plan it finds.</p>
+            <a href="/share/" className="secondary-action share-link">Share Periscope</a>
           </div>
 
       <div className="launcher launcher-flush">
