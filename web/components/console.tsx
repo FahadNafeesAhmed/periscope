@@ -3,7 +3,8 @@ import { useBrief } from "@/lib/brief";
 import { useRunController, type RunController } from "@/lib/run-controller";
 import { BENCHMARK, BENCHMARK_TOTAL, SAMPLE_BRIEF } from "@/lib/sample";
 import { AgentRail } from "./agents";
-import { Brief } from "./brief";
+import { Ask } from "./ask";
+import { Brief, prettyName } from "./brief";
 import { ArrowRight } from "./icons";
 import { SiteFooter, SiteHeader, type AgentStatus } from "./site-chrome";
 
@@ -22,7 +23,7 @@ export function Console() {
         <Hero rc={rc} status={status} />
         <section id="brief" className="workspace" aria-label="Brief">
           <div className="workspace-inner">
-            {loading ? <div className="brief brief-loading"><p>Loading the latest brief…</p></div> : <Brief data={data ?? SAMPLE_BRIEF} sample={!data} />}
+            {loading ? <div className="brief brief-loading"><p>Loading the latest brief…</p></div> : <Brief data={data ?? SAMPLE_BRIEF} sample={!data}>{data && <Ask runIds={rc.followedRuns} name={prettyName(data.competitor)} />}</Brief>}
             <AgentRail rc={rc} />
           </div>
         </section>

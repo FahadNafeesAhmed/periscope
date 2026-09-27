@@ -49,7 +49,7 @@ export function Brief({ data, sample, children }: { data: BriefData; sample: boo
   );
 }
 
-const prettyName = (id: string) => {
+export const prettyName = (id: string) => {
   if (!id) return "Competitor";
   const base = id.includes(".") ? id.split(".")[0] : id;
   return base.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
