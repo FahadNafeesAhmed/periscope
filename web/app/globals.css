@@ -2730,3 +2730,32 @@ tr:hover .row-copy {
 .row-copy:hover {
   color: var(--accent);
 }
+/* Brief panel */
+.brief-btn {
+  background: var(--accent);
+  color: var(--canvas);
+  border: 0;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.brief-panel {
+  margin: 16px 0;
+  border: 1px solid var(--accent);
+  padding: 20px;
+}
+.brief-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.brief-content {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  margin: 0;
+}
