@@ -2759,3 +2759,11 @@ tr:hover .row-copy {
   color: var(--text);
   margin: 0;
 }
+/* Benchmark link bar */
+.benchmark-link-bar {
+  text-align: center;
+  padding: 24px var(--gutter);
+  font-size: 13px;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+}

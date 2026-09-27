@@ -3,11 +3,9 @@ import { useState } from "react";
 import { Mark } from "./sections";
 import { LiveSection } from "./live-section";
 import { useTheme } from "./theme-provider";
-import benchmark from "@/public/benchmark/summary.json";
 
 export function Landing() {
   const { theme, toggle: toggleTheme } = useTheme();
-  const [metric, setMetric] = useState<"material" | "reported">("material");
   const [connected, setConnected] = useState(false);
   return (
     <div className="hackathon">
@@ -21,7 +19,7 @@ export function Landing() {
         </a>
         <nav aria-label="Main navigation">
           <a href="#live">Live</a>
-          <a href="#results">Benchmark</a>
+          <a href="/benchmark">Benchmark</a>
           <a href="https://github.com/FahadNafeesAhmed/periscope">GitHub ↗</a>
           <button
             type="button"
@@ -95,137 +93,9 @@ export function Landing() {
             </div>
           </section>
         )}
-        <section
-          id="results"
-          className="console-section results-section"
-          aria-labelledby="results-title"
-        >
-          <div className="console-section-title">
-            <div>
-              <div className="eyebrow">The benchmark · {benchmark.date}</div>
-              <h2 id="results-title">
-                65 planted facts.
-                <br />
-                How much made it through?
-              </h2>
-            </div>
-            <div className="benchmark-score">
-              63<span>/65</span>
-              <small>facts Periscope brought back</small>
-            </div>
-          </div>
-          <div className="results-grid">
-            <div>
-              <div className="metric-controls" aria-label="Benchmark metric">
-                <button
-                  type="button"
-                  aria-pressed={metric === "material"}
-                  onClick={() => setMetric("material")}
-                >
-                  Facts in material
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={metric === "reported"}
-                  onClick={() => setMetric("reported")}
-                >
-                  Reported by Opus 4.8
-                </button>
-              </div>
-              <div className="console-chart">
-                {benchmark.approaches.map((a, i) => {
-                  const v = a[metric];
-                  return (
-                    <div
-                      className={`chart-row ${i === 0 ? "highlight" : ""}`}
-                      key={a.name}
-                    >
-                      <div className="chart-title">
-                        <strong>{a.name}</strong>
-                        <span>
-                          {v ?? "N/A"}
-                          {v !== null && <span className="muted"> / 65</span>}
-                        </span>
-                      </div>
-                      <div className="bar-track">
-                        <div style={{ width: `${((v ?? 0) / 65) * 100}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="benchmark-explanation">
-              <span className="panel-caption">How to read this</span>
-              <p>
-                Periscope collected <strong>63</strong> facts. Opus reported{" "}
-                <strong>58</strong> after reading that material.
-              </p>
-              <p>
-                ChatGPT Astra scored <strong>38</strong> on its separately
-                hand-scored browsing answer. It stopped at the login; it has no
-                Opus follow-up score.
-              </p>
-              <p>
-                The comparison ran on Helix Ledger, a controlled test site with
-                65 planted facts. The same browser code runs in the demo above.
-              </p>
-              <a
-                href="/benchmark/results-2026-09-13-14-16.md"
-                className="text-link"
-              >
-                Read the original report ↗
-              </a>
-            </div>
-          </div>
-          <details className="method">
-            <summary>
-              Full group breakdown and scoring method <span>+</span>
-            </summary>
-            <div
-              className="table-region"
-              tabIndex={0}
-              role="region"
-              aria-label="Benchmark group results"
-            >
-              <table>
-                <caption>
-                  Cells show facts in material / reported by Opus 4.8. ChatGPT
-                  is the separately scored answer.
-                </caption>
-                <thead>
-                  <tr>
-                    <th>Rubric group</th>
-                    <th>Facts</th>
-                    <th>Fetch</th>
-                    <th>Parallel</th>
-                    <th>Periscope</th>
-                    <th>ChatGPT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {benchmark.groups.map((g) => (
-                    <tr key={g.name}>
-                      <td>{g.name}</td>
-                      <td>{g.total}</td>
-                      <td>{g.fetch.join(" / ")}</td>
-                      <td>{g.reader.join(" / ")}</td>
-                      <td>{g.periscope.join(" / ")}</td>
-                      <td>{g.chatgpt}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p>
-              Matching uses case-insensitive substrings of planted text.
-              Integration statuses require name and status. This is a controlled
-              benchmark, not a general ranking.{" "}
-              <a href="/benchmark/helix-rubric.json">Download rubric</a> ·{" "}
-              <a href="/benchmark/manual-results.json">ChatGPT scoring</a>
-            </p>
-          </details>
-        </section>
+        <div className="benchmark-link-bar">
+          Periscope recovered 63 of 65 planted facts in a controlled benchmark. <a href="/benchmark" className="text-link">See how it compares ↗</a>
+        </div>
       </main>
       <footer className="console-footer">
         <span>
