@@ -1,6 +1,7 @@
 "use client";
 import { useBrief } from "@/lib/brief";
-import { useRunController, type RunController } from "@/lib/run-controller";
+import { hostOf } from "@/lib/brief";
+import { normalizeUrl, useRunController, type RunController } from "@/lib/run-controller";
 import { BENCHMARK, BENCHMARK_TOTAL, SAMPLE_BRIEF } from "@/lib/sample";
 import { AgentRail } from "./agents";
 import { Ask } from "./ask";
@@ -15,15 +16,28 @@ export function Console() {
   const status: AgentStatus = rc.health === null ? "unknown" : !rc.connected || !rc.health.steel ? "offline" : working ? "busy" : "ready";
   const loading = rc.connected && rc.followedRuns.length > 0 && !data;
 
+  /** After a brief, the next useful step is usually the next competitor. */
+  function another() {
+    rc.setTarget("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => document.getElementById("target")?.focus({ preventScroll: true }), 300);
+  }
+  async function build() {
+    const started = await rc.run();
+    if (started) document.getElementById("brief")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
     <>
       <a href="#main" className="skip-link">Skip to content</a>
       <SiteHeader status={status} />
       <main id="main">
-        <Hero rc={rc} status={status} />
+        <Hero rc={rc} status={status} onBuild={build} />
         <section id="brief" className="workspace" aria-label="Brief">
           <div className="workspace-inner">
-            {loading ? <div className="brief brief-loading"><p>Loading the latest brief…</p></div> : <Brief data={data ?? SAMPLE_BRIEF} sample={!data}>{data && <Ask runIds={rc.followedRuns} name={prettyName(data.competitor)} />}</Brief>}
+            {loading
+              ? <div className="brief brief-loading" aria-live="polite"><span className="pill live"><i aria-hidden="true" />Agents working</span><h2>{hostOf(normalizeUrl(rc.target)) || "Your brief"}</h2><p>The agents are opening the page. Findings appear here as they come in, usually within a minute.</p></div>
+              : <Brief data={data ?? SAMPLE_BRIEF} sample={!data} onAnother={data && !data.running ? another : undefined}>{data && <Ask runIds={rc.followedRuns} name={prettyName(data.competitor)} />}</Brief>}
             <AgentRail rc={rc} />
           </div>
         </section>
@@ -35,7 +49,7 @@ export function Console() {
   );
 }
 
-function Hero({ rc, status }: { rc: RunController; status: AgentStatus }) {
+function Hero({ rc, status, onBuild }: { rc: RunController; status: AgentStatus; onBuild: () => void }) {
   const { plan } = rc;
   const planText = plan.demo
     ? `Reads 3 pages and signs in with a test account${rc.compare ? ", then opens 3 countries" : ""}`
@@ -50,7 +64,7 @@ function Hero({ rc, status }: { rc: RunController; status: AgentStatus }) {
           <h1 id="hero-title">What your competitors charge. <span>Including what they hide.</span></h1>
           <p className="lede">Paste a competitor&apos;s site. Periscope&apos;s browser agents flip every pricing toggle, visit from other countries and sign in like a customer, then hand you a brief with a source for every number.</p>
 
-          <form className="launcher" onSubmit={(e) => { e.preventDefault(); void rc.run(); }}>
+          <form className="launcher" onSubmit={(e) => { e.preventDefault(); onBuild(); }}>
             <label htmlFor="target" className="visually-hidden">Competitor site</label>
             <div className="launcher-field">
               <input id="target" type="text" inputMode="url" autoComplete="url" spellCheck={false} value={rc.target} onChange={(e) => rc.setTarget(e.target.value)} placeholder="competitor.com/pricing" />

@@ -4,9 +4,9 @@
 import { useState } from "react";
 import { countryName } from "@/lib/api";
 import { briefMarkdown, findingsFor, hostOf, moneyIn, pathOf, pricesCsv, relTime, revealPhrase, shortDate, type BriefData, type Finding } from "@/lib/brief";
-import { Check, Copy, Download } from "./icons";
+import { ArrowRight, Check, Copy, Download } from "./icons";
 
-export function Brief({ data, sample, children }: { data: BriefData; sample: boolean; children?: React.ReactNode }) {
+export function Brief({ data, sample, onAnother, children }: { data: BriefData; sample: boolean; onAnother?: () => void; children?: React.ReactNode }) {
   const findings = findingsFor(data);
   const pages = new Set([...data.coverage.map((c) => c.url), ...data.hidden.map((o) => o.url)]).size;
   const countries = new Set(data.grids.flatMap((g) => g.countries.map((c) => c.country))).size;
@@ -27,7 +27,7 @@ export function Brief({ data, sample, children }: { data: BriefData; sample: boo
         </div>
         <h2 id="brief-title">{name}</h2>
         {facts.length > 0 && <p className="brief-facts">{facts.join(" · ")}</p>}
-        <BriefActions data={data} findings={findings} name={name} />
+        <BriefActions data={data} findings={findings} name={name} onAnother={onAnother} />
         {sample && <p className="sample-note">A brief from our test run on Helix Ledger, a SaaS site built for the benchmark. Run Periscope on any competitor to get your own.</p>}
       </header>
 
@@ -66,7 +66,7 @@ function FindingItem({ f }: { f: Finding }) {
   );
 }
 
-function BriefActions({ data, findings, name }: { data: BriefData; findings: Finding[]; name: string }) {
+function BriefActions({ data, findings, name, onAnother }: { data: BriefData; findings: Finding[]; name: string; onAnother?: () => void }) {
   const [copied, setCopied] = useState(false);
   function copy() {
     navigator.clipboard.writeText(briefMarkdown(data, findings)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }, () => {});
@@ -83,6 +83,7 @@ function BriefActions({ data, findings, name }: { data: BriefData; findings: Fin
     <div className="brief-actions">
       <button type="button" className="button secondary" onClick={copy}>{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy as Markdown"}</button>
       {data.prices.length > 0 && <button type="button" className="button secondary" onClick={csv}><Download />Prices as CSV</button>}
+      {onAnother && <button type="button" className="button ghost" onClick={onAnother}>Brief another competitor<ArrowRight size={14} /></button>}
     </div>
   );
 }

@@ -54,12 +54,14 @@ export async function apiPost<T>(path: string, body: unknown, headers: Record<st
   }
 }
 
-/** Poll a loader on an interval; the value stays until the next successful load. */
+/** Poll a loader on an interval; the value stays until the next successful load, and resets when deps change
+ *  so one run's data never shows under another. */
 export function usePoll<T>(load: () => Promise<T | null>, intervalMs: number, deps: unknown[] = []): T | null {
   const [value, setValue] = useState<T | null>(null);
   const loader = useRef(load);
   loader.current = load;
   useEffect(() => {
+    setValue(null);
     let cancelled = false;
     const tick = async () => { const v = await loader.current(); if (!cancelled && v !== null) setValue(v); };
     void tick();

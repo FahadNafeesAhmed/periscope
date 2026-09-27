@@ -241,7 +241,9 @@ mark {
   box-shadow: var(--shadow);
   padding: clamp(24px, 4vw, 48px);
 }
-.brief-loading { color: var(--text-2); min-height: 240px; }
+.brief-loading { min-height: 320px; }
+.brief-loading h2 { margin-top: 14px; }
+.brief-loading p { margin-top: 8px; color: var(--text-2); max-width: 52ch; }
 .brief-head { padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
 .brief-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13px; color: var(--text-2); }
 .pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: var(--bg-band); font-size: 12px; font-weight: 500; color: var(--text-2); }
@@ -251,6 +253,7 @@ mark {
 .brief h2 { font-size: clamp(28px, 3.4vw, 36px); line-height: 1.1; letter-spacing: -0.025em; font-weight: 600; }
 .brief-facts { margin-top: 8px; color: var(--text-2); font-size: 14px; }
 .brief-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.brief-actions .ghost { margin-left: auto; }
 .sample-note { margin-top: 20px; font-size: 13px; color: var(--text-2); max-width: 62ch; }
 
 .brief-section { padding-top: 32px; }

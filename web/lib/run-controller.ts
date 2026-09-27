@@ -97,10 +97,12 @@ export function useRunController() {
     return () => { stop = true; clearInterval(id); };
   }, [mapRun]);
 
-  async function run() {
-    if (busy) return;
+  /** Launch from the current target; resolves true when at least one run started. */
+  async function run(): Promise<boolean> {
+    if (busy) return false;
+    let started = false;
     const url = normalizeUrl(target);
-    if (!/^https?:\/\/[^/]+\.[^/]+/i.test(url)) { setNote("Enter a site address, like acme.com/pricing."); return; }
+    if (!/^https?:\/\/[^/]+\.[^/]+/i.test(url)) { setNote("Enter a site address, like acme.com/pricing."); return false; }
     setBusy(true);
     if (isDemoSite(url)) {
       setNote("Starting…");
@@ -108,6 +110,7 @@ export function useRunController() {
       const launched = [parse.runId, login.runId].filter((x): x is string => Boolean(x));
       const errors = [parse.error, login.error].filter((x): x is string => Boolean(x));
       if (launched.length) {
+        started = true;
         setFollowed(launched);
         setNote(compare ? "Reading the page, signing in, and opening other countries." : "Reading the page and signing in. Other countries open if the page gives a reason.");
       }
@@ -117,6 +120,7 @@ export function useRunController() {
       setNote(wholeSite ? "Mapping the site…" : "Starting…");
       const r = wholeSite ? await launchSiteRun(url) : await launchCustomRun(url);
       if (r.runId) {
+        started = true;
         setFollowed([r.runId]);
         if (wholeSite) setMapRun(r.runId);
         setNote(wholeSite ? "Mapping the site from its sitemap and links before any browser opens." : compare ? "Reading the page and opening other countries." : "Reading the page. Other countries open if the page gives a reason.");
@@ -124,6 +128,7 @@ export function useRunController() {
       } else setNote(r.error ?? "Could not start.");
     }
     setBusy(false);
+    return started;
   }
 
   async function resume(h: Handoff) {
