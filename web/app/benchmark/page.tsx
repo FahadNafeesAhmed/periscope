@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Mark } from "@/components/sections";
+import { Mark } from "@/components/mark";
 import { useTheme } from "@/components/theme-provider";
 import benchmark from "@/public/benchmark/summary.json";
 

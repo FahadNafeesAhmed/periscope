@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Mark } from "./sections";
+import { Mark } from "./mark";
 import { LiveSection } from "./live-section";
 import { useTheme } from "./theme-provider";
 
